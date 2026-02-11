@@ -1,0 +1,30 @@
+import { cn } from '../../utils/cn'
+
+interface BadgeProps {
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'plan'
+  children: React.ReactNode
+  className?: string
+}
+
+const variantStyles = {
+  default: 'bg-[#d8ccc4]/30 text-[#6b5d57] dark:bg-[#2D2925] dark:text-[#B8AEA4]',
+  success: 'bg-[#4f6f64]/15 text-[#4f6f64] dark:bg-[#6B8F82]/15 dark:text-[#6B8F82]',
+  warning: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  danger: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  info: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  plan: 'bg-[#db6f57]/15 text-[#db6f57] dark:bg-[#E07A62]/15 dark:text-[#E07A62]',
+}
+
+export function Badge({ variant = 'default', children, className }: BadgeProps) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+        variantStyles[variant],
+        className
+      )}
+    >
+      {children}
+    </span>
+  )
+}
