@@ -1,0 +1,99 @@
+name: Deploy Automático
+
+on:
+  push:
+    branches:
+      - main # ATENÇÃO: Verifique se você realmente quer fazer o deploy do 'main' para 'dev'.
+
+jobs:
+  # O Job 'build' agora faz apenas as etapas de setup e build.
+  build_e_deploy: # Nomeei como um job único, pois o build e o deploy são interligados.
+    runs-on: self-hosted
+    # Usa um único job para todo o fluxo de SSH, simplificando o uso da chave.
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      # 1. CARREGA A CHAVE SSH NO AGENTE (PRÁTICA SEGURA!)
+      - name: Configurar SSH Agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # 2. ADICIONA O HOST À LISTA DE CONFIÁVEIS (known_hosts)
+      # Isso evita o uso do inseguro StrictHostKeyChecking=no.
+      - name: Configurar Known Hosts
+        run: |
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      # 3. CONFIGURAR SSH E BUILD NO SERVIDOR
+      - name: Build no Servidor Remoto
+        run: |
+          # Defina a URL SSH do seu repositório no GitHub (Variáveis LOCAIS ao runner)
+          REPO_URL="git@github.com:GuikBit/Bellory-admin.git" 
+          TARGET_DIR="/var/www/admin"
+          
+          # Remova as aspas simples para permitir a substituição das variáveis $REPO_URL e $TARGET_DIR
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+            set -e # Aborta se algum comando falhar
+
+            if [ -d "$TARGET_DIR/.git" ]; then
+              echo "--- Repositório existe. Fazendo Pull..."
+              cd "$TARGET_DIR"
+              eval "$(ssh-agent -s)"
+              ssh-add ~/.ssh/id_ed25519
+              git checkout main 
+              git pull origin main 
+            else
+              echo "--- Repositório não encontrado. Fazendo Clone Inicial..."
+              
+              # O TARGET_DIR será expandido corretamente agora
+              mkdir -p "$(dirname "$TARGET_DIR")"
+              git clone -b main "$REPO_URL" "$TARGET_DIR"
+              cd "$TARGET_DIR"
+            fi
+            
+            echo "--- Fazendo Build..."
+            npm ci
+            npm run build
+          EOF
+          
+      # 4. CONFIGURAR SSH E DEPLOY NO SERVIDOR
+      - name: Deploy e Reinício do Serviço
+        # Novo bloco de script, mantendo a chave via ssh-agent
+        run: |
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            set -e # Aborta se algum comando falhar
+
+            echo "--- Preparando a pasta de produção..."
+
+            # Limpeza
+            if [ -d "/var/www/html/site" ]; then
+              rm -rf /var/www/html/site
+            fi
+
+            # Cria a pasta e copia os arquivos do build
+            mkdir -p /var/www/html/admin
+            cp -r /var/www/admin/dist/* /var/www/html/admin/
+
+            echo "--- Gerenciando o Serviço (serve)..."
+
+            # O seu método de 'netstat' é funcional, mas um pouco frágil.
+            # Se você usar 'pm2' ou 'systemd', seria mais robusto.
+            # Mantenho o seu script, mas adicionei o 'set -e' para garantir.
+            
+            PID=$(netstat -tulnp | grep :3001 | awk '{print $7}' | cut -d'/' -f1)
+
+            if [ ! -z "$PID" ]; then
+              echo "Matando processo antigo (PID: $PID)..."
+              kill -9 $PID
+              sleep 2
+            fi
+
+            echo "Iniciando novo processo serve..."
+            cd /var/www/html/admin # Mude o diretório antes de rodar o 'serve'
+            nohup serve -s -l 3001 --ssl-cert '/etc/letsencrypt/live/admin.bellory.com.br/fullchain.pem' --ssl-key '/etc/letsencrypt/live/admin.bellory.com.br/privkey.pem' > serve.log 2>&1 &
+            
+            echo "Deploy concluído!"
+          EOF

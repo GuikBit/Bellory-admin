@@ -11,6 +11,7 @@ import {
   UserCheck,
   Smartphone,
   CreditCard,
+  FileText,
   ChevronLeft,
   ChevronRight,
   X,
@@ -28,6 +29,8 @@ interface SidebarProps {
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/organizacoes', icon: Building2, label: 'Organizações' },
+  { path: '/planos', icon: CreditCard, label: 'Planos' },
+  { path: '/templates', icon: FileText, label: 'Templates' },
   {
     label: 'Métricas',
     children: [
@@ -134,7 +137,7 @@ export function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: Sideba
                       </>
                     )}
                   </button>
-                  {!collapsed && metricasOpen && (
+                  {!collapsed && metricasOpen && item.children && (
                     <div className="ml-3 mt-1 space-y-0.5 border-l border-[#d8ccc4] dark:border-[#2D2925] pl-3">
                       {item.children.map((child) => (
                         <NavLink

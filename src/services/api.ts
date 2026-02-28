@@ -3,13 +3,13 @@ import axios from 'axios'
 function getBaseUrl(): string {
   const hostname = window.location.hostname
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8081/api'
-    // return 'https://api-dev.bellory.com.br/api'
+    return 'http://localhost:8081/api/v1'
+    // return 'https://api-dev.bellory.com.br/api/v1/'
   }
   if (hostname.includes('dev')) {
-    return 'https://api-dev.bellory.com.br/api'
+    return 'https://api-dev.bellory.com.br/api/v1'
   }
-  return 'https://api.bellory.com.br/api'
+  return 'https://api.bellory.com.br/api/v1'
 }
 
 export const api = axios.create({

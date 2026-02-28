@@ -16,6 +16,10 @@ const Funcionarios = lazy(() => import('./pages/metricas/Funcionarios').then(m =
 const Clientes = lazy(() => import('./pages/metricas/Clientes').then(m => ({ default: m.Clientes })))
 const Instancias = lazy(() => import('./pages/metricas/Instancias').then(m => ({ default: m.Instancias })))
 const Planos = lazy(() => import('./pages/metricas/Planos').then(m => ({ default: m.Planos })))
+const PlanosList = lazy(() => import('./pages/planos/PlanosList').then(m => ({ default: m.PlanosList })))
+const PlanoForm = lazy(() => import('./pages/planos/PlanoForm').then(m => ({ default: m.PlanoForm })))
+const TemplatesList = lazy(() => import('./pages/templates/TemplatesList').then(m => ({ default: m.TemplatesList })))
+const TemplateForm = lazy(() => import('./pages/templates/TemplateForm').then(m => ({ default: m.TemplateForm })))
 
 function LoadingFallback() {
   return (
@@ -67,6 +71,12 @@ export function App() {
             <Route path="/metricas/clientes" element={<Clientes />} />
             <Route path="/metricas/instancias" element={<Instancias />} />
             <Route path="/metricas/planos" element={<Planos />} />
+            <Route path="/planos" element={<PlanosList />} />
+            <Route path="/planos/novo" element={<PlanoForm />} />
+            <Route path="/planos/:id" element={<PlanoForm />} />
+            <Route path="/templates" element={<TemplatesList />} />
+            <Route path="/templates/novo" element={<TemplateForm />} />
+            <Route path="/templates/:id" element={<TemplateForm />} />
           </Route>
 
           {/* Redirect root to dashboard */}

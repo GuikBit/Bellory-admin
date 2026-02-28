@@ -16,6 +16,10 @@ const pageTitles: Record<string, string> = {
   '/metricas/clientes': 'Clientes',
   '/metricas/instancias': 'Instâncias',
   '/metricas/planos': 'Planos',
+  '/planos': 'Planos',
+  '/planos/novo': 'Novo Plano',
+  '/templates': 'Templates',
+  '/templates/novo': 'Novo Template',
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
@@ -24,6 +28,8 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   const getPageTitle = () => {
     if (location.pathname.startsWith('/organizacoes/')) return 'Detalhes da Organização'
+    if (location.pathname.match(/^\/planos\/\d+$/)) return 'Editar Plano'
+    if (location.pathname.match(/^\/templates\/\d+$/)) return 'Editar Template'
     return pageTitles[location.pathname] || 'Admin'
   }
 
