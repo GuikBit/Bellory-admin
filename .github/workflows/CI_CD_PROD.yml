@@ -42,7 +42,7 @@ jobs:
               echo "--- Repositório existe. Fazendo Pull..."
               cd "$TARGET_DIR"
               eval "$(ssh-agent -s)"
-              ssh-add ~/.ssh/id_ed25519
+              ssh-add ~/.ssh/github_actions_admin
               git checkout main 
               git pull origin main 
             else
