@@ -30,30 +30,24 @@ jobs:
       # 3. CONFIGURAR SSH E BUILD NO SERVIDOR
       - name: Build no Servidor Remoto
         run: |
-          # Defina a URL SSH do seu repositório no GitHub (Variáveis LOCAIS ao runner)
-          REPO_URL="git@github.com:GuikBit/Bellory-admin.git" 
-          TARGET_DIR="/var/www/admin"
-          
-          # Remova as aspas simples para permitir a substituição das variáveis $REPO_URL e $TARGET_DIR
-          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
-            set -e # Aborta se algum comando falhar
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            set -e
+
+            REPO_URL="git@github.com:GuikBit/Bellory-admin.git"
+            TARGET_DIR="/var/www/admin"
 
             if [ -d "$TARGET_DIR/.git" ]; then
               echo "--- Repositório existe. Fazendo Pull..."
               cd "$TARGET_DIR"
-              # eval "$(ssh-agent -s)"
-              # ssh-add ~/.ssh/github_actions_admin
-              git checkout main 
-              git pull origin main 
+              git checkout main
+              git pull origin main
             else
               echo "--- Repositório não encontrado. Fazendo Clone Inicial..."
-              
-              # O TARGET_DIR será expandido corretamente agora
-              mkdir -p "$(dirname "$TARGET_DIR")"
+              mkdir -p /var/www
               git clone -b main "$REPO_URL" "$TARGET_DIR"
               cd "$TARGET_DIR"
             fi
-            
+
             echo "--- Fazendo Build..."
             npm ci
             npm run build
