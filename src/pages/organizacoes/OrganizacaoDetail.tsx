@@ -172,9 +172,9 @@ export function OrganizacaoDetail() {
                 <h3 className="text-sm font-semibold text-[#2a2420] dark:text-[#F5F0EB] mb-4">Uso dos Limites</h3>
                 <div className="space-y-4">
                   <ProgressBar label="Agendamentos no mês" value={org.metricas.agendamentosNoMes} max={org.limites.maxAgendamentosMes} />
-                  <ProgressBar label="Usuários" value={org.metricas.totalFuncionarios} max={org.limites.maxUsuarios} color="secondary" />
-                  <ProgressBar label="Clientes" value={org.metricas.totalClientes} max={org.limites.maxClientes} color="secondary" />
-                  <ProgressBar label="Serviços" value={org.metricas.totalServicos} max={org.limites.maxServicos} color="secondary" />
+                  <ProgressBar label="Usuários" value={org.metricas.totalFuncionarios} max={org.limites.maxUsuarios} color="primary" />
+                  <ProgressBar label="Clientes" value={org.metricas.totalClientes} max={org.limites.maxClientes} color="primary" />
+                  <ProgressBar label="Serviços" value={org.metricas.totalServicos} max={org.limites.maxServicos} color="primary" />
                 </div>
               </CardContent>
             </Card>
