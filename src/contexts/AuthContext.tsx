@@ -3,6 +3,7 @@ import { api } from '../services/api'
 
 interface User {
   id: number
+  username: string
   nomeCompleto: string
   email: string
   role: string
@@ -12,7 +13,7 @@ interface AuthContextType {
   user: User | null
   token: string | null
   loading: boolean
-  login: (email: string, senha: string) => Promise<void>
+  login: (username: string, senha: string) => Promise<void>
   logout: () => void
   isAuthenticated: boolean
 }
@@ -40,10 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false)
   }, [])
 
-  const login = async (email: string, senha: string) => {
-
-    console.log({ username: email, password: senha })
-    const response = await api.post('/auth/login', { username: email, password: senha })
+  const login = async (username: string, senha: string) => {
+    const response = await api.post('/admin/auth/login', { username, password: senha })
     // const { token: newToken, usuario } = response.data.dados || response.data
     const token = response.data?.token;
     const user = response.data?.user;

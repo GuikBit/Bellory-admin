@@ -12,10 +12,12 @@ import {
   Smartphone,
   CreditCard,
   FileText,
+  ShieldCheck,
   ChevronLeft,
   ChevronRight,
   X,
   LogOut,
+  PanelRightOpen,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -31,6 +33,7 @@ const navItems = [
   { path: '/organizacoes', icon: Building2, label: 'Organizações' },
   { path: '/planos', icon: CreditCard, label: 'Planos' },
   { path: '/templates', icon: FileText, label: 'Templates' },
+  { path: '/usuarios', icon: ShieldCheck, label: 'Usuários' },
   {
     label: 'Métricas',
     children: [
@@ -66,18 +69,18 @@ export function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: Sideba
 
       <aside
         className={cn(
-          'fixed top-0 left-0 z-50 h-full flex flex-col border-r transition-all duration-300',
-          'bg-white border-[#d8ccc4] dark:bg-[#1A1715] dark:border-[#2D2925]',
+          'fixed top-0 left-0 z-50 h-full flex flex-col transition-all duration-300',
+          'bg-white dark:bg-[#1A1715]',
           // Desktop
           'lg:relative lg:translate-x-0',
-          collapsed ? 'lg:w-[72px]' : 'lg:w-64',
+          collapsed ? 'lg:w-[72px]' : 'lg:w-50',
           // Mobile
           isOpen ? 'translate-x-0 w-72' : '-translate-x-full w-72',
         )}
       >
         {/* Header */}
         <div className={cn(
-          'flex items-center h-16 px-4 border-b border-[#d8ccc4] dark:border-[#2D2925] shrink-0',
+          'flex items-center h-16 px-4 shrink-0',
           collapsed ? 'justify-center' : 'justify-between'
         )}>
           {!collapsed && (
@@ -183,24 +186,11 @@ export function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: Sideba
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-[#d8ccc4] dark:border-[#2D2925] p-3 shrink-0">
-          {/* Collapse toggle - desktop only */}
-          <button
-            onClick={onToggleCollapse}
-            className="hidden lg:flex items-center justify-center w-full rounded-lg px-3 py-2 text-sm text-[#6b5d57] dark:text-[#B8AEA4] hover:bg-[#faf8f6] dark:hover:bg-[#2D2925]/50 transition-colors mb-2"
-          >
-            {collapsed ? <ChevronRight size={18} /> : (
-              <>
-                <ChevronLeft size={18} />
-                <span className="ml-2">Recolher</span>
-              </>
-            )}
-          </button>
-
+        <div className=" p-3 shrink-0">
           {/* User info & logout */}
           <div className={cn(
             'flex items-center rounded-lg px-3 py-2',
-            collapsed ? 'justify-center' : 'gap-3'
+            collapsed ? 'justify-center text-center flex-col gap-3' : 'gap-3'
           )}>
             <div className="w-8 h-8 rounded-full bg-[#4f6f64] dark:bg-[#6B8F82] flex items-center justify-center shrink-0">
               <span className="text-white text-xs font-medium">

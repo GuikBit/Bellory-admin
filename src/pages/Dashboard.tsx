@@ -2,6 +2,7 @@ import { useDashboard } from '../queries/useDashboard'
 import { MetricCard } from '../components/ui/MetricCard'
 import { MetricCardSkeleton, ChartSkeleton } from '../components/ui/Skeleton'
 import { DoughnutChartCard } from '../components/charts/DoughnutChart'
+import { BrazilBubbleMapCard } from '../components/charts/BrazilBubbleMap'
 import { Card, CardContent } from '../components/ui/Card'
 import { formatCurrency, formatNumber } from '../utils/format'
 import {
@@ -114,6 +115,9 @@ export function Dashboard() {
           iconBg="bg-cyan-500/10 text-cyan-600 dark:bg-cyan-400/10 dark:text-cyan-400"
         />
       </div>
+
+      {/* Brazil map */}
+      <BrazilBubbleMapCard />
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

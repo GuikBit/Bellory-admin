@@ -1,0 +1,44 @@
+.custom-tooltip {
+  background: white;
+  border: 1px solid #d8ccc4;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-family: 'Inter', sans-serif;
+}
+
+.custom-tooltip::before {
+  border-top-color: #d8ccc4;
+}
+
+.dark .custom-tooltip {
+  background: #2D2925;
+  border-color: #3D3530;
+  color: #F5F0EB;
+}
+
+.dark .custom-tooltip::before {
+  border-top-color: #3D3530;
+}
+
+/* Hide default leaflet zoom control */
+.leaflet-control-zoom {
+  display: none !important;
+}
+
+/* Style leaflet attribution */
+.leaflet-control-attribution {
+  font-size: 10px !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-radius: 4px 0 0 0 !important;
+  padding: 2px 6px !important;
+}
+
+.dark .leaflet-control-attribution {
+  background: rgba(26, 23, 21, 0.7) !important;
+  color: #7A716A !important;
+}
+
+.dark .leaflet-control-attribution a {
+  color: #B8AEA4 !important;
+}

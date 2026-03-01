@@ -4,10 +4,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
-import { Mail, Lock, Moon, Sun, Eye, EyeOff } from 'lucide-react'
+import { User, Lock, Moon, Sun, Eye, EyeOff } from 'lucide-react'
 
 export function Login() {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [senha, setSenha] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
@@ -20,19 +20,19 @@ export function Login() {
     e.preventDefault()
     setError('')
 
-    if (!email || !senha) {
+    if (!username || !senha) {
       setError('Preencha todos os campos')
       return
     }
 
     setLoading(true)
     try {
-      await login(email, senha)
+      await login(username, senha)
       navigate('/dashboard', { replace: true })
     } catch (err: any) {
       setError(
         err.response?.status === 401
-          ? 'Email ou senha incorretos'
+          ? 'Usuário ou senha incorretos'
           : err.response?.status === 403
           ? 'Acesso não autorizado. Apenas administradores podem acessar.'
           : 'Erro ao fazer login. Tente novamente.'
@@ -71,13 +71,13 @@ export function Login() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Email"
+              label="Usuário"
               type="text"
-              placeholder="admin@bellory.com.br"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              leftIcon={<Mail size={18} />}
-              autoComplete="email"
+              placeholder="admin"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              leftIcon={<User size={18} />}
+              autoComplete="username"
             />
 
             <Input

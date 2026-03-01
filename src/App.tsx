@@ -20,6 +20,8 @@ const PlanosList = lazy(() => import('./pages/planos/PlanosList').then(m => ({ d
 const PlanoForm = lazy(() => import('./pages/planos/PlanoForm').then(m => ({ default: m.PlanoForm })))
 const TemplatesList = lazy(() => import('./pages/templates/TemplatesList').then(m => ({ default: m.TemplatesList })))
 const TemplateForm = lazy(() => import('./pages/templates/TemplateForm').then(m => ({ default: m.TemplateForm })))
+const UsuariosList = lazy(() => import('./pages/usuarios/UsuariosList').then(m => ({ default: m.UsuariosList })))
+const UsuarioForm = lazy(() => import('./pages/usuarios/UsuarioForm').then(m => ({ default: m.UsuarioForm })))
 
 function LoadingFallback() {
   return (
@@ -77,6 +79,9 @@ export function App() {
             <Route path="/templates" element={<TemplatesList />} />
             <Route path="/templates/novo" element={<TemplateForm />} />
             <Route path="/templates/:id" element={<TemplateForm />} />
+            <Route path="/usuarios" element={<UsuariosList />} />
+            <Route path="/usuarios/novo" element={<UsuarioForm />} />
+            <Route path="/usuarios/:id" element={<UsuarioForm />} />
           </Route>
 
           {/* Redirect root to dashboard */}

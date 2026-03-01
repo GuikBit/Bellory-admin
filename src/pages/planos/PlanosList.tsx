@@ -34,6 +34,7 @@ import {
   Heart,
   Shield,
   Gem,
+  Tag,
   type LucideIcon,
 } from 'lucide-react'
 import type { PlanoBellory } from '../../types/plano'
@@ -349,6 +350,12 @@ export function PlanosList() {
                                   Popular
                                 </span>
                               )}
+                              {plano.promoMensalAtiva && (
+                                <span className="flex items-center gap-0.5 text-[10px] font-medium text-[#db6f57] dark:text-[#E07A62] bg-[#db6f57]/10 dark:bg-[#E07A62]/10 px-1.5 py-0.5 rounded-full">
+                                  <Tag size={9} />
+                                  {plano.promoMensalTexto || 'Promo'}
+                                </span>
+                              )}
                             </div>
                             {plano.tagline && (
                               <p className="text-xs text-[#6b5d57] dark:text-[#7A716A] truncate max-w-[200px]">{plano.tagline}</p>
@@ -366,8 +373,21 @@ export function PlanosList() {
                           {plano.ativo ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-right text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB]">
-                        {formatCurrency(plano.precoMensal)}
+                      <td className="px-4 py-3 text-right">
+                        {plano.promoMensalAtiva && plano.promoMensalPreco != null ? (
+                          <div>
+                            <span className="text-xs text-[#6b5d57] dark:text-[#7A716A] line-through mr-1">
+                              {formatCurrency(plano.precoMensal)}
+                            </span>
+                            <span className="text-sm font-medium text-[#db6f57] dark:text-[#E07A62]">
+                              {formatCurrency(plano.promoMensalPreco)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB]">
+                            {formatCurrency(plano.precoMensal)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div>
@@ -459,6 +479,12 @@ export function PlanosList() {
                         {plano.popular && (
                           <Star size={12} className="text-amber-500 fill-amber-500" />
                         )}
+                        {plano.promoMensalAtiva && (
+                          <span className="flex items-center gap-0.5 text-[9px] font-medium text-[#db6f57] dark:text-[#E07A62] bg-[#db6f57]/10 dark:bg-[#E07A62]/10 px-1.5 py-0.5 rounded-full">
+                            <Tag size={8} />
+                            {plano.promoMensalTexto || 'Promo'}
+                          </span>
+                        )}
                       </div>
                       <code className="text-[10px] font-mono text-[#6b5d57] dark:text-[#7A716A]">{plano.codigo}</code>
                     </div>
@@ -470,7 +496,14 @@ export function PlanosList() {
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 text-xs text-[#6b5d57] dark:text-[#B8AEA4]">
-                    <span className="font-medium text-[#2a2420] dark:text-[#F5F0EB]">{formatCurrency(plano.precoMensal)}/mês</span>
+                    {plano.promoMensalAtiva && plano.promoMensalPreco != null ? (
+                      <span>
+                        <span className="text-[10px] text-[#6b5d57] dark:text-[#7A716A] line-through mr-1">{formatCurrency(plano.precoMensal)}</span>
+                        <span className="font-medium text-[#db6f57] dark:text-[#E07A62]">{formatCurrency(plano.promoMensalPreco)}/mês</span>
+                      </span>
+                    ) : (
+                      <span className="font-medium text-[#2a2420] dark:text-[#F5F0EB]">{formatCurrency(plano.precoMensal)}/mês</span>
+                    )}
                     <span className="flex items-center gap-1"><Building2 size={12} /> {plano.totalOrganizacoesUsando}</span>
                   </div>
                   {!reorderMode && (

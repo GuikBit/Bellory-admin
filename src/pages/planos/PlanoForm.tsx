@@ -29,6 +29,8 @@ import {
   ChevronUp,
   ChevronDown,
   Infinity,
+  Tag,
+  Percent,
 } from 'lucide-react'
 import type { PlanoFeature, PlanoLimites, PlanoBelloryCreate, PlanoBelloryUpdate } from '../../types/plano'
 
@@ -140,6 +142,9 @@ export function PlanoForm() {
   const [cor, setCor] = useState('#6b7280')
   const [gradiente, setGradiente] = useState('')
   const [ordemExibicao, setOrdemExibicao] = useState('')
+  const [promoMensalAtiva, setPromoMensalAtiva] = useState(false)
+  const [promoMensalPreco, setPromoMensalPreco] = useState('')
+  const [promoMensalTexto, setPromoMensalTexto] = useState('')
   const [features, setFeatures] = useState<PlanoFeature[]>([])
   const [limites, setLimites] = useState<PlanoLimites>({ ...DEFAULT_LIMITES })
   const [showPreview, setShowPreview] = useState(true)
@@ -196,6 +201,9 @@ export function PlanoForm() {
       setCor(planoData.cor || '#6b7280')
       setGradiente(planoData.gradiente || '')
       setOrdemExibicao(planoData.ordemExibicao?.toString() || '')
+      setPromoMensalAtiva(planoData.promoMensalAtiva || false)
+      setPromoMensalPreco(planoData.promoMensalPreco?.toString() || '')
+      setPromoMensalTexto(planoData.promoMensalTexto || '')
       setFeatures(planoData.features || [])
       setLimites(planoData.limites || { ...DEFAULT_LIMITES })
     }
@@ -228,6 +236,9 @@ export function PlanoForm() {
       precoMensal: Number(precoMensal),
       precoAnual: Number(precoAnual),
       descontoPercentualAnual: descontoPercentualAnual ? Math.round(Number(descontoPercentualAnual)) : undefined,
+      promoMensalAtiva,
+      promoMensalPreco: promoMensalAtiva && promoMensalPreco ? Number(promoMensalPreco) : undefined,
+      promoMensalTexto: promoMensalAtiva && promoMensalTexto.trim() ? promoMensalTexto.trim() : undefined,
       features: features.length > 0 ? features : undefined,
       ordemExibicao: ordemExibicao ? Number(ordemExibicao) : undefined,
       limites,
@@ -432,6 +443,54 @@ export function PlanoForm() {
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Promoção Mensal */}
+              <div className="mt-6 pt-5 border-t border-[#d8ccc4]/50 dark:border-[#2D2925]/50">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Tag size={16} className="text-[#db6f57] dark:text-[#E07A62]" />
+                    <div>
+                      <p className="text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB]">Promoção Mensal</p>
+                      <p className="text-xs text-[#6b5d57] dark:text-[#7A716A]">Ative um preço promocional para o plano mensal</p>
+                    </div>
+                  </div>
+                  <Toggle checked={promoMensalAtiva} onChange={setPromoMensalAtiva} />
+                </div>
+
+                {promoMensalAtiva && (
+                  <div className="space-y-4 pl-0 sm:pl-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="Preço Promocional (R$)"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={promoMensalPreco}
+                        onChange={(e) => setPromoMensalPreco(e.target.value)}
+                      />
+                      <Input
+                        label="Texto da Promoção"
+                        placeholder="ex: Black Friday"
+                        value={promoMensalTexto}
+                        onChange={(e) => setPromoMensalTexto(e.target.value)}
+                        maxLength={100}
+                      />
+                    </div>
+                    {Number(promoMensalPreco) > 0 && Number(precoMensal) > 0 && Number(promoMensalPreco) < Number(precoMensal) && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#4f6f64]/10 dark:bg-[#6B8F82]/10">
+                        <Percent size={14} className="text-[#4f6f64] dark:text-[#6B8F82]" />
+                        <span className="text-sm font-medium text-[#4f6f64] dark:text-[#6B8F82]">
+                          {Math.round(((Number(precoMensal) - Number(promoMensalPreco)) / Number(precoMensal)) * 100)}% de desconto
+                        </span>
+                        <span className="text-xs text-[#6b5d57] dark:text-[#7A716A]">
+                          (economia de {formatCurrency(Number(precoMensal) - Number(promoMensalPreco))}/mês)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -731,12 +790,42 @@ export function PlanoForm() {
 
                   {/* Price */}
                   <div className="mb-4">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-bold text-[#2a2420] dark:text-[#F5F0EB]">
-                        {formatCurrency(Number(precoMensal) || 0)}
-                      </span>
-                      <span className="text-sm text-[#6b5d57] dark:text-[#7A716A]">/mês</span>
-                    </div>
+                    {promoMensalAtiva && Number(promoMensalPreco) > 0 ? (
+                      <>
+                        {promoMensalTexto && (
+                          <div
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white mb-2"
+                            style={{ backgroundColor: '#db6f57' }}
+                          >
+                            <Tag size={10} />
+                            {promoMensalTexto}
+                          </div>
+                        )}
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm text-[#6b5d57] dark:text-[#7A716A] line-through">
+                            {formatCurrency(Number(precoMensal) || 0)}
+                          </span>
+                          {Number(precoMensal) > 0 && Number(promoMensalPreco) < Number(precoMensal) && (
+                            <span className="text-[10px] font-bold text-[#db6f57] dark:text-[#E07A62]">
+                              -{Math.round(((Number(precoMensal) - Number(promoMensalPreco)) / Number(precoMensal)) * 100)}%
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-bold text-[#db6f57] dark:text-[#E07A62]">
+                            {formatCurrency(Number(promoMensalPreco))}
+                          </span>
+                          <span className="text-sm text-[#6b5d57] dark:text-[#7A716A]">/mês</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold text-[#2a2420] dark:text-[#F5F0EB]">
+                          {formatCurrency(Number(precoMensal) || 0)}
+                        </span>
+                        <span className="text-sm text-[#6b5d57] dark:text-[#7A716A]">/mês</span>
+                      </div>
+                    )}
                     {Number(precoAnual) > 0 && (
                       <p className="text-xs text-[#6b5d57] dark:text-[#7A716A] mt-0.5">
                         ou {formatCurrency(Number(precoAnual) || 0)}/ano

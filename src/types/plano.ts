@@ -44,6 +44,11 @@ export interface PlanoBellory {
   precoAnual: number
   descontoPercentualAnual: number | null
 
+  // Promoção Mensal
+  promoMensalAtiva: boolean
+  promoMensalPreco: number | null
+  promoMensalTexto: string | null
+
   // Features e Limites
   features: PlanoFeature[]
   limites: PlanoLimites | null
@@ -76,6 +81,9 @@ export interface PlanoBelloryCreate {
   precoMensal: number
   precoAnual: number
   descontoPercentualAnual?: number
+  promoMensalAtiva?: boolean
+  promoMensalPreco?: number
+  promoMensalTexto?: string
   features?: PlanoFeature[]
   ordemExibicao?: number
   limites?: PlanoLimites
@@ -96,6 +104,9 @@ export interface PlanoBelloryUpdate {
   precoMensal?: number
   precoAnual?: number
   descontoPercentualAnual?: number
+  promoMensalAtiva?: boolean
+  promoMensalPreco?: number
+  promoMensalTexto?: string
   features?: PlanoFeature[]
   ordemExibicao?: number
   limites?: PlanoLimites

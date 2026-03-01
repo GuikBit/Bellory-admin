@@ -1,9 +1,11 @@
-import { Moon, Sun, Menu, Bell } from 'lucide-react'
+import { Moon, Sun, Menu, Bell, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useLocation } from 'react-router-dom'
 
 interface HeaderProps {
   onMenuClick: () => void
+  onToggleCollapse: () => void
+  collapsed: boolean
 }
 
 const pageTitles: Record<string, string> = {
@@ -20,9 +22,11 @@ const pageTitles: Record<string, string> = {
   '/planos/novo': 'Novo Plano',
   '/templates': 'Templates',
   '/templates/novo': 'Novo Template',
+  '/usuarios': 'Usuários Admin',
+  '/usuarios/novo': 'Novo Usuário',
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick, onToggleCollapse, collapsed }: HeaderProps) {
   const { theme, toggleTheme } = useTheme()
   const location = useLocation()
 
@@ -30,6 +34,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     if (location.pathname.startsWith('/organizacoes/')) return 'Detalhes da Organização'
     if (location.pathname.match(/^\/planos\/\d+$/)) return 'Editar Plano'
     if (location.pathname.match(/^\/templates\/\d+$/)) return 'Editar Template'
+    if (location.pathname.match(/^\/usuarios\/\d+$/)) return 'Editar Usuário'
     return pageTitles[location.pathname] || 'Admin'
   }
 
@@ -51,13 +56,19 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 h-16 flex items-center justify-between px-4 md:px-6 border-b border-[#d8ccc4] dark:border-[#2D2925] bg-white/80 dark:bg-[#0D0B0A]/80 backdrop-blur-md">
+    <header className="sticky top-0 z-30 h-16 flex items-center justify-between px-4 md:px-6 bg-white dark:bg-[#1A1715] backdrop-blur-md">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
           className="lg:hidden text-[#6b5d57] dark:text-[#B8AEA4] hover:text-[#2a2420] dark:hover:text-[#F5F0EB] transition-colors"
         >
           <Menu size={22} />
+        </button>
+        <button
+          onClick={onToggleCollapse}
+          className="lg:block hidden text-[#6b5d57] mr-3 dark:text-[#B8AEA4] hover:text-[#2a2420] dark:hover:text-[#F5F0EB]"
+        >
+          {!collapsed ? <PanelRightOpen size={20} /> : <PanelRightClose size={20} />}
         </button>
         <div>
           <h2 className="text-lg font-semibold text-[#2a2420] dark:text-[#F5F0EB]">
