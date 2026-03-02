@@ -22,6 +22,9 @@ const TemplatesList = lazy(() => import('./pages/templates/TemplatesList').then(
 const TemplateForm = lazy(() => import('./pages/templates/TemplateForm').then(m => ({ default: m.TemplateForm })))
 const UsuariosList = lazy(() => import('./pages/usuarios/UsuariosList').then(m => ({ default: m.UsuariosList })))
 const UsuarioForm = lazy(() => import('./pages/usuarios/UsuarioForm').then(m => ({ default: m.UsuarioForm })))
+const BillingDashboard = lazy(() => import('./pages/assinaturas/BillingDashboard'))
+const AssinaturaDetail = lazy(() => import('./pages/assinaturas/AssinaturaDetail'))
+const EscolherPlano = lazy(() => import('./pages/assinatura/EscolherPlano'))
 
 function LoadingFallback() {
   return (
@@ -82,7 +85,19 @@ export function App() {
             <Route path="/usuarios" element={<UsuariosList />} />
             <Route path="/usuarios/novo" element={<UsuarioForm />} />
             <Route path="/usuarios/:id" element={<UsuarioForm />} />
+            <Route path="/assinaturas" element={<BillingDashboard />} />
+            <Route path="/assinaturas/:id" element={<AssinaturaDetail />} />
           </Route>
+
+          {/* Escolher plano - fora do admin layout, mas protegido */}
+          <Route
+            path="/escolher-plano"
+            element={
+              <ProtectedRoute>
+                <EscolherPlano />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Redirect root to dashboard */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

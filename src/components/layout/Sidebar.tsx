@@ -18,6 +18,7 @@ import {
   X,
   LogOut,
   PanelRightOpen,
+  Receipt,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -32,6 +33,7 @@ const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/organizacoes', icon: Building2, label: 'Organizações' },
   { path: '/planos', icon: CreditCard, label: 'Planos' },
+  { path: '/assinaturas', icon: Receipt, label: 'Assinaturas' },
   { path: '/templates', icon: FileText, label: 'Templates' },
   { path: '/usuarios', icon: ShieldCheck, label: 'Usuários' },
   {

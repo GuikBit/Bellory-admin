@@ -24,6 +24,7 @@ const pageTitles: Record<string, string> = {
   '/templates/novo': 'Novo Template',
   '/usuarios': 'Usuários Admin',
   '/usuarios/novo': 'Novo Usuário',
+  '/assinaturas': 'Assinaturas',
 }
 
 export function Header({ onMenuClick, onToggleCollapse, collapsed }: HeaderProps) {
@@ -35,6 +36,7 @@ export function Header({ onMenuClick, onToggleCollapse, collapsed }: HeaderProps
     if (location.pathname.match(/^\/planos\/\d+$/)) return 'Editar Plano'
     if (location.pathname.match(/^\/templates\/\d+$/)) return 'Editar Template'
     if (location.pathname.match(/^\/usuarios\/\d+$/)) return 'Editar Usuário'
+    if (location.pathname.match(/^\/assinaturas\/\d+$/)) return 'Detalhe da Assinatura'
     return pageTitles[location.pathname] || 'Admin'
   }
 
