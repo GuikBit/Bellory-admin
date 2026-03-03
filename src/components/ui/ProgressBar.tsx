@@ -27,7 +27,7 @@ export function ProgressBar({ value, max, label, showValues = true, className, c
           {label && <span className="text-xs font-medium text-[#6b5d57] dark:text-[#B8AEA4]">{label}</span>}
           {showValues && (
             <span className="text-xs text-[#6b5d57] dark:text-[#7A716A]">
-              {value.toLocaleString('pt-BR')} / {max.toLocaleString('pt-BR')}
+              {value.toLocaleString('pt-BR')} / {max?.toLocaleString('pt-BR')}
             </span>
           )}
         </div>

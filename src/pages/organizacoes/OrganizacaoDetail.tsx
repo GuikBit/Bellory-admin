@@ -76,6 +76,11 @@ export function OrganizacaoDetail() {
   const { data: org, isLoading, error } = useOrganizacao(Number(id))
   const [activeTab, setActiveTab] = useState<Tab>('info')
 
+  const orgId = Number(id)
+  const { data: assinatura, isLoading: assinaturaLoading } = useAssinaturaByOrganizacao(orgId)
+  const { data: cobrancas, isLoading: cobrancasLoading } = useCobrancasOrganizacao(orgId)
+  const { data: pagamentos, isLoading: pagamentosLoading } = usePagamentosOrganizacao(orgId)
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -95,11 +100,6 @@ export function OrganizacaoDetail() {
       </div>
     )
   }
-
-  const orgId = Number(id)
-  const { data: assinatura, isLoading: assinaturaLoading } = useAssinaturaByOrganizacao(orgId)
-  const { data: cobrancas, isLoading: cobrancasLoading } = useCobrancasOrganizacao(orgId)
-  const { data: pagamentos, isLoading: pagamentosLoading } = usePagamentosOrganizacao(orgId)
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'info', label: 'Informações' },
