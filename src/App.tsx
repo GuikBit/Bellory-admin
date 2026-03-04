@@ -25,6 +25,9 @@ const UsuarioForm = lazy(() => import('./pages/usuarios/UsuarioForm').then(m => 
 const BillingDashboard = lazy(() => import('./pages/assinaturas/BillingDashboard'))
 const AssinaturaDetail = lazy(() => import('./pages/assinaturas/AssinaturaDetail'))
 const EscolherPlano = lazy(() => import('./pages/assinatura/EscolherPlano'))
+const CuponsList = lazy(() => import('./pages/cupons/CuponsList').then(m => ({ default: m.CuponsList })))
+const CupomForm = lazy(() => import('./pages/cupons/CupomForm').then(m => ({ default: m.CupomForm })))
+const CupomDetail = lazy(() => import('./pages/cupons/CupomDetail').then(m => ({ default: m.CupomDetail })))
 
 function LoadingFallback() {
   return (
@@ -87,6 +90,10 @@ export function App() {
             <Route path="/usuarios/:id" element={<UsuarioForm />} />
             <Route path="/assinaturas" element={<BillingDashboard />} />
             <Route path="/assinaturas/:id" element={<AssinaturaDetail />} />
+            <Route path="/cupons" element={<CuponsList />} />
+            <Route path="/cupons/novo" element={<CupomForm />} />
+            <Route path="/cupons/:id" element={<CupomDetail />} />
+            <Route path="/cupons/:id/editar" element={<CupomForm />} />
           </Route>
 
           {/* Escolher plano - fora do admin layout, mas protegido */}
