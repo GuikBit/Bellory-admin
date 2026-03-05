@@ -19,8 +19,9 @@ import {
   Users,
   Building2,
   Tag,
+  Repeat,
 } from 'lucide-react'
-import type { TipoDesconto, CicloCobranca, CupomDescontoCreate, CupomDescontoUpdate } from '../../types/cupom'
+import type { TipoDesconto, CicloCobranca, TipoAplicacao, CupomDescontoCreate, CupomDescontoUpdate } from '../../types/cupom'
 
 const PLANOS_DISPONIVEIS = ['basico', 'plus', 'premium']
 const SEGMENTOS_DISPONIVEIS = [
@@ -57,6 +58,7 @@ export function CupomForm() {
   const [segmentosPermitidos, setSegmentosPermitidos] = useState<string[]>([])
   const [organizacoesPermitidas, setOrganizacoesPermitidas] = useState('')
   const [cicloCobranca, setCicloCobranca] = useState<CicloCobranca | ''>('')
+  const [tipoAplicacao, setTipoAplicacao] = useState<TipoAplicacao>('PRIMEIRA_COBRANCA')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Load data in edit mode
@@ -74,6 +76,7 @@ export function CupomForm() {
       setSegmentosPermitidos(cupomData.segmentosPermitidos || [])
       setOrganizacoesPermitidas(cupomData.organizacoesPermitidas?.join(', ') || '')
       setCicloCobranca((cupomData.cicloCobranca as CicloCobranca) || '')
+      setTipoAplicacao((cupomData.tipoAplicacao as TipoAplicacao) || 'PRIMEIRA_COBRANCA')
     }
   }, [cupomData])
 
@@ -111,6 +114,7 @@ export function CupomForm() {
         segmentosPermitidos: segmentosPermitidos.length > 0 ? segmentosPermitidos : undefined,
         organizacoesPermitidas: parseOrgIds(organizacoesPermitidas),
         cicloCobranca: cicloCobranca ? (cicloCobranca as CicloCobranca) : undefined,
+        tipoAplicacao,
       }
       atualizarCupom.mutate(
         { id: cupomId, dto: payload },
@@ -130,6 +134,7 @@ export function CupomForm() {
         segmentosPermitidos: segmentosPermitidos.length > 0 ? segmentosPermitidos : undefined,
         organizacoesPermitidas: parseOrgIds(organizacoesPermitidas),
         cicloCobranca: cicloCobranca ? (cicloCobranca as CicloCobranca) : undefined,
+        tipoAplicacao,
       }
       criarCupom.mutate(payload, { onSuccess: () => navigate('/cupons') })
     }
@@ -447,6 +452,44 @@ export function CupomForm() {
                     <option value="ANUAL">Apenas anual</option>
                   </select>
                 </div>
+
+                {/* Tipo de aplicacao */}
+                <div>
+                  <label className="block text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB] mb-2">Aplicacao do desconto</label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setTipoAplicacao('PRIMEIRA_COBRANCA')}
+                      className={cn(
+                        'flex-1 flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all duration-200',
+                        tipoAplicacao === 'PRIMEIRA_COBRANCA'
+                          ? 'border-[#db6f57] bg-[#db6f57]/10 text-[#db6f57] dark:border-[#E07A62] dark:bg-[#E07A62]/10 dark:text-[#E07A62]'
+                          : 'border-[#d8ccc4] dark:border-[#2D2925] text-[#6b5d57] dark:text-[#B8AEA4] hover:border-[#db6f57]/50 dark:hover:border-[#E07A62]/50'
+                      )}
+                    >
+                      <Ticket size={16} />
+                      Primeira cobranca
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTipoAplicacao('RECORRENTE')}
+                      className={cn(
+                        'flex-1 flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all duration-200',
+                        tipoAplicacao === 'RECORRENTE'
+                          ? 'border-[#4f6f64] bg-[#4f6f64]/10 text-[#4f6f64] dark:border-[#6B8F82] dark:bg-[#6B8F82]/10 dark:text-[#6B8F82]'
+                          : 'border-[#d8ccc4] dark:border-[#2D2925] text-[#6b5d57] dark:text-[#B8AEA4] hover:border-[#4f6f64]/50 dark:hover:border-[#6B8F82]/50'
+                      )}
+                    >
+                      <Repeat size={16} />
+                      Todas as cobrancas
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-[#6b5d57] dark:text-[#7A716A]">
+                    {tipoAplicacao === 'PRIMEIRA_COBRANCA'
+                      ? 'O desconto sera aplicado apenas na primeira cobranca da assinatura.'
+                      : 'O desconto sera aplicado em todas as cobrancas enquanto o cupom estiver vigente.'}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -503,6 +546,9 @@ export function CupomForm() {
                   {cicloCobranca && (
                     <Badge variant="plan">{cicloCobranca}</Badge>
                   )}
+                  <Badge variant={tipoAplicacao === 'RECORRENTE' ? 'success' : 'info'}>
+                    {tipoAplicacao === 'RECORRENTE' ? 'Recorrente' : '1a cobranca'}
+                  </Badge>
                 </div>
 
                 {planosPermitidos.length > 0 && (
@@ -520,7 +566,9 @@ export function CupomForm() {
               </div>
 
               <p className="mt-3 text-[10px] text-center text-[#6b5d57] dark:text-[#7A716A]">
-                Desconto aplicado apenas na primeira cobranca
+                {tipoAplicacao === 'RECORRENTE'
+                  ? 'Desconto aplicado em todas as cobrancas'
+                  : 'Desconto aplicado apenas na primeira cobranca'}
               </p>
             </CardContent>
           </Card>

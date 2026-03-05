@@ -2,6 +2,8 @@ export type TipoDesconto = 'PERCENTUAL' | 'VALOR_FIXO'
 
 export type CicloCobranca = 'MENSAL' | 'ANUAL'
 
+export type TipoAplicacao = 'PRIMEIRA_COBRANCA' | 'RECORRENTE'
+
 export interface CupomDesconto {
   id: number
   codigo: string
@@ -17,6 +19,7 @@ export interface CupomDesconto {
   segmentosPermitidos: string[] | null
   organizacoesPermitidas: number[] | null
   cicloCobranca: string | null
+  tipoAplicacao: string | null
   ativo: boolean
   vigente: boolean
   dtCriacao: string
@@ -36,6 +39,7 @@ export interface CupomDescontoCreate {
   segmentosPermitidos?: string[]
   organizacoesPermitidas?: number[]
   cicloCobranca?: CicloCobranca
+  tipoAplicacao?: TipoAplicacao
 }
 
 export interface CupomDescontoUpdate {
@@ -51,6 +55,7 @@ export interface CupomDescontoUpdate {
   segmentosPermitidos?: string[]
   organizacoesPermitidas?: number[]
   cicloCobranca?: CicloCobranca
+  tipoAplicacao?: TipoAplicacao
 }
 
 export interface CupomUtilizacao {

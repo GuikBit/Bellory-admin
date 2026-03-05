@@ -21,6 +21,7 @@ import {
   Tag,
   History,
   TrendingUp,
+  Repeat,
   AlertTriangle,
   Check,
   X,
@@ -403,6 +404,17 @@ export function CupomDetail() {
                 <p className="text-sm text-[#2a2420] dark:text-[#F5F0EB]">
                   {cupom.cicloCobranca || 'Mensal e Anual'}
                 </p>
+              </div>
+
+              {/* Tipo de aplicacao */}
+              <div>
+                <p className="text-xs font-medium text-[#6b5d57] dark:text-[#7A716A] uppercase tracking-wider mb-1.5">Aplicacao</p>
+                <div className="flex items-center gap-1.5">
+                  <Repeat size={12} className={cupom.tipoAplicacao === 'RECORRENTE' ? 'text-[#4f6f64] dark:text-[#6B8F82]' : 'text-[#6b5d57] dark:text-[#B8AEA4]'} />
+                  <Badge variant={cupom.tipoAplicacao === 'RECORRENTE' ? 'success' : 'info'}>
+                    {cupom.tipoAplicacao === 'RECORRENTE' ? 'Todas as cobrancas' : 'Primeira cobranca'}
+                  </Badge>
+                </div>
               </div>
 
               {/* Max por org */}
