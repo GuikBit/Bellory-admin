@@ -28,6 +28,13 @@ const EscolherPlano = lazy(() => import('./pages/assinatura/EscolherPlano'))
 const CuponsList = lazy(() => import('./pages/cupons/CuponsList').then(m => ({ default: m.CuponsList })))
 const CupomForm = lazy(() => import('./pages/cupons/CupomForm').then(m => ({ default: m.CupomForm })))
 const CupomDetail = lazy(() => import('./pages/cupons/CupomDetail').then(m => ({ default: m.CupomDetail })))
+const AnalyticsLayout = lazy(() => import('./pages/analytics/AnalyticsLayout').then(m => ({ default: m.AnalyticsLayout })))
+const AnalyticsOverview = lazy(() => import('./pages/analytics/AnalyticsOverview').then(m => ({ default: m.AnalyticsOverview })))
+const AnalyticsTraffic = lazy(() => import('./pages/analytics/AnalyticsTraffic').then(m => ({ default: m.AnalyticsTraffic })))
+const AnalyticsBehavior = lazy(() => import('./pages/analytics/AnalyticsBehavior').then(m => ({ default: m.AnalyticsBehavior })))
+const AnalyticsConversions = lazy(() => import('./pages/analytics/AnalyticsConversions').then(m => ({ default: m.AnalyticsConversions })))
+const AnalyticsContext = lazy(() => import('./pages/analytics/AnalyticsContext').then(m => ({ default: m.AnalyticsContext })))
+const AnalyticsRealtime = lazy(() => import('./pages/analytics/AnalyticsRealtime').then(m => ({ default: m.AnalyticsRealtime })))
 
 function LoadingFallback() {
   return (
@@ -94,6 +101,15 @@ export function App() {
             <Route path="/cupons/novo" element={<CupomForm />} />
             <Route path="/cupons/:id" element={<CupomDetail />} />
             <Route path="/cupons/:id/editar" element={<CupomForm />} />
+            <Route path="/analytics" element={<AnalyticsLayout />}>
+              <Route index element={<AnalyticsOverview />} />
+              <Route path="overview" element={<AnalyticsOverview />} />
+              <Route path="traffic" element={<AnalyticsTraffic />} />
+              <Route path="behavior" element={<AnalyticsBehavior />} />
+              <Route path="conversions" element={<AnalyticsConversions />} />
+              <Route path="context" element={<AnalyticsContext />} />
+              <Route path="realtime" element={<AnalyticsRealtime />} />
+            </Route>
           </Route>
 
           {/* Escolher plano - fora do admin layout, mas protegido */}

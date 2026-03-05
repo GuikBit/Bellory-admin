@@ -10,7 +10,7 @@ export function formatNumber(value: number): string {
 }
 
 export function formatPercent(value: number): string {
-  return `${value.toFixed(1).replace('.', ',')}%`
+  return `${value?.toFixed(1).replace('.', ',')}%`
 }
 
 export function formatDate(dateStr: string): string {
@@ -23,7 +23,9 @@ export function formatDate(dateStr: string): string {
 }
 
 export function formatDateTime(dateStr: string): string {
+  if (!dateStr) return '—'
   const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return '—'
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -56,6 +58,20 @@ export function formatMonthYear(mesStr: string): string {
   const [year, month] = mesStr.split('-')
   const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
   return `${meses[parseInt(month) - 1]}/${year}`
+}
+
+export function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`
+  const seconds = Math.floor(ms / 1000)
+  const minutes = Math.floor(seconds / 60)
+  if (minutes === 0) return `${seconds}s`
+  const remainingSeconds = seconds % 60
+  return `${minutes}m ${remainingSeconds.toString().padStart(2, '0')}s`
+}
+
+export function formatDays(ms: number): string {
+  const days = Math.round(ms / 86400000)
+  return days === 1 ? '1 dia' : `${days} dias`
 }
 
 export function abbreviateNumber(value: number): string {

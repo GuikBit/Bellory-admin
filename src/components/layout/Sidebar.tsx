@@ -20,6 +20,7 @@ import {
   PanelRightOpen,
   Receipt,
   Ticket,
+  BarChart3,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -38,6 +39,7 @@ const navItems = [
   { path: '/cupons', icon: Ticket, label: 'Cupons' },
   { path: '/templates', icon: FileText, label: 'Templates' },
   { path: '/usuarios', icon: ShieldCheck, label: 'Usuários' },
+  { path: '/analytics', icon: BarChart3, label: 'Analytics' },
   {
     label: 'Métricas',
     children: [
