@@ -16,6 +16,9 @@ import {
   Users,
   CalendarCheck,
   Filter,
+  Briefcase,
+  Wrench,
+  Smartphone,
 } from 'lucide-react'
 import type { OrganizacaoList } from '../../types/organizacao'
 
@@ -179,6 +182,9 @@ export function OrganizacoesList() {
                     </th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[#6b5d57] dark:text-[#7A716A]">Status</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[#6b5d57] dark:text-[#7A716A]">Plano</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[#6b5d57] dark:text-[#7A716A]">Instâncias</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[#6b5d57] dark:text-[#7A716A]">Serviços</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[#6b5d57] dark:text-[#7A716A]">Funcionários</th>
                     <th className="text-center px-4 py-3">
                       <button onClick={() => toggleSort('totalClientes')} className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-[#6b5d57] dark:text-[#7A716A] hover:text-[#2a2420] dark:hover:text-[#F5F0EB] mx-auto">
                         Clientes <ArrowUpDown size={12} />
@@ -219,6 +225,15 @@ export function OrganizacoesList() {
                         <Badge variant={planBadgeVariant[org.planoCodigo] || 'default'}>
                           {org.planoNome}
                         </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm text-[#2a2420] dark:text-[#F5F0EB]">
+                        {formatNumber(org.totalInstancias)}
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm text-[#2a2420] dark:text-[#F5F0EB]">
+                        {formatNumber(org.totalServicos)}
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm text-[#2a2420] dark:text-[#F5F0EB]">
+                        {formatNumber(org.totalFuncionarios)}
                       </td>
                       <td className="px-4 py-3 text-center text-sm text-[#2a2420] dark:text-[#F5F0EB]">
                         {formatNumber(org.totalClientes)}
@@ -262,7 +277,10 @@ export function OrganizacoesList() {
                     </Badge>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-[#6b5d57] dark:text-[#B8AEA4]">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-[#6b5d57] dark:text-[#B8AEA4]">
+                  <span className="flex items-center gap-1"><Smartphone size={12} /> {org.totalInstancias}</span>
+                  <span className="flex items-center gap-1"><Wrench size={12} /> {org.totalServicos}</span>
+                  <span className="flex items-center gap-1"><Briefcase size={12} /> {org.totalFuncionarios}</span>
                   <span className="flex items-center gap-1"><Users size={12} /> {org.totalClientes}</span>
                   <span className="flex items-center gap-1"><CalendarCheck size={12} /> {org.totalAgendamentos}</span>
                   <span>{formatDate(org.dtCadastro)}</span>
