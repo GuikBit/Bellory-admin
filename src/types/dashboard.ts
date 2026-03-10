@@ -1,3 +1,5 @@
+import { OrgLocation } from "@/components/charts/BrazilBubbleMap"
+
 export interface DashboardData {
   totalOrganizacoes: number
   organizacoesAtivas: number
@@ -19,4 +21,5 @@ export interface DashboardData {
     plus: number
     premium: number
   }
+  localizacoes: OrgLocation[]
 }

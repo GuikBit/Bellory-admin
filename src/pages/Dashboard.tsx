@@ -117,7 +117,7 @@ export function Dashboard() {
       </div>
 
       {/* Brazil map */}
-      <BrazilBubbleMapCard />
+      <BrazilBubbleMapCard data={data.localizacoes}/>
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet'
+import { useMemo, useState, useCallback, useEffect } from 'react'
+import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap, useMapEvents } from 'react-leaflet'
+import Supercluster from 'supercluster'
 import { useTheme } from '../../contexts/ThemeContext'
 import { Card, CardHeader, CardContent } from '../ui/Card'
 import 'leaflet/dist/leaflet.css'
@@ -13,44 +14,29 @@ export interface OrgLocation {
   quantidade: number
 }
 
-// Mock data — cidades brasileiras com quantidade de organizações
-const MOCK_DATA: OrgLocation[] = [
-  { cidade: 'São Paulo', estado: 'SP', latitude: -23.5505, longitude: -46.6333, quantidade: 142 },
-  { cidade: 'Rio de Janeiro', estado: 'RJ', latitude: -22.9068, longitude: -43.1729, quantidade: 89 },
-  { cidade: 'Belo Horizonte', estado: 'MG', latitude: -19.9167, longitude: -43.9345, quantidade: 67 },
-  { cidade: 'Brasília', estado: 'DF', latitude: -15.7801, longitude: -47.9292, quantidade: 45 },
-  { cidade: 'Curitiba', estado: 'PR', latitude: -25.4284, longitude: -49.2733, quantidade: 53 },
-  { cidade: 'Porto Alegre', estado: 'RS', latitude: -30.0346, longitude: -51.2177, quantidade: 38 },
-  { cidade: 'Salvador', estado: 'BA', latitude: -12.9714, longitude: -38.5124, quantidade: 34 },
-  { cidade: 'Recife', estado: 'PE', latitude: -8.0476, longitude: -34.877, quantidade: 28 },
-  { cidade: 'Fortaleza', estado: 'CE', latitude: -3.7172, longitude: -38.5433, quantidade: 31 },
-  { cidade: 'Manaus', estado: 'AM', latitude: -3.119, longitude: -60.0217, quantidade: 12 },
-  { cidade: 'Belém', estado: 'PA', latitude: -1.4558, longitude: -48.5024, quantidade: 15 },
-  { cidade: 'Goiânia', estado: 'GO', latitude: -16.6869, longitude: -49.2648, quantidade: 29 },
-  { cidade: 'Campinas', estado: 'SP', latitude: -22.9099, longitude: -47.0626, quantidade: 41 },
-  { cidade: 'Florianópolis', estado: 'SC', latitude: -27.5954, longitude: -48.548, quantidade: 22 },
-  { cidade: 'Vitória', estado: 'ES', latitude: -20.3155, longitude: -40.3128, quantidade: 18 },
-  { cidade: 'Natal', estado: 'RN', latitude: -5.7945, longitude: -35.211, quantidade: 14 },
-  { cidade: 'Campo Grande', estado: 'MS', latitude: -20.4697, longitude: -54.6201, quantidade: 16 },
-  { cidade: 'Cuiabá', estado: 'MT', latitude: -15.601, longitude: -56.0974, quantidade: 11 },
-  { cidade: 'João Pessoa', estado: 'PB', latitude: -7.115, longitude: -34.861, quantidade: 10 },
-  { cidade: 'Teresina', estado: 'PI', latitude: -5.0892, longitude: -42.8019, quantidade: 8 },
-  { cidade: 'São Luís', estado: 'MA', latitude: -2.5297, longitude: -44.2825, quantidade: 9 },
-  { cidade: 'Maceió', estado: 'AL', latitude: -9.6658, longitude: -35.7353, quantidade: 7 },
-  { cidade: 'Aracaju', estado: 'SE', latitude: -10.9091, longitude: -37.0677, quantidade: 6 },
-  { cidade: 'Ribeirão Preto', estado: 'SP', latitude: -21.1704, longitude: -47.8103, quantidade: 25 },
-  { cidade: 'Uberlândia', estado: 'MG', latitude: -18.9186, longitude: -48.2772, quantidade: 19 },
-  { cidade: 'Londrina', estado: 'PR', latitude: -23.3045, longitude: -51.1696, quantidade: 17 },
-  { cidade: 'Porto Velho', estado: 'RO', latitude: -8.7612, longitude: -63.9004, quantidade: 5 },
-  { cidade: 'Palmas', estado: 'TO', latitude: -10.1689, longitude: -48.3317, quantidade: 4 },
-]
+interface OrgProperties {
+  cidade: string
+  estado: string
+  quantidade: number
+}
+
+type OrgPoint = Supercluster.PointFeature<OrgProperties>
+type ClusterOrPoint = Supercluster.ClusterFeature<OrgProperties> | OrgPoint
 
 const BRAZIL_CENTER: [number, number] = [-14.235, -51.9253]
 
-function getRadius(quantidade: number, max: number): number {
-  const min = 6
-  const maxR = 30
-  return min + ((quantidade / max) * (maxR - min))
+function getClusterRadius(pointCount: number, maxCount: number, zoom: number): number {
+  const minR = 8
+  const maxR = 40
+  const ratio = Math.min(pointCount / Math.max(maxCount, 1), 1)
+  const zoomFactor = Math.max(1 - (zoom - 4) * 0.06, 0.3)
+  return minR + ratio * (maxR - minR) * zoomFactor
+}
+
+function getPointRadius(quantidade: number, maxQuantidade: number): number {
+  const minR = 5
+  const maxR = 18
+  return minR + (quantidade / Math.max(maxQuantidade, 1)) * (maxR - minR)
 }
 
 function ZoomControls() {
@@ -83,6 +69,183 @@ function ZoomControls() {
   )
 }
 
+interface ClusterLayerProps {
+  locations: OrgLocation[]
+  isDark: boolean
+  bubbleColor: string
+  bubbleBorder: string
+}
+
+function ClusterLayer({ locations, isDark, bubbleColor, bubbleBorder }: ClusterLayerProps) {
+  const map = useMap()
+  const [zoom, setZoom] = useState(map.getZoom())
+  const [bounds, setBounds] = useState(map.getBounds())
+
+  const updateState = useCallback(() => {
+    setZoom(map.getZoom())
+    setBounds(map.getBounds())
+  }, [map])
+
+  useEffect(() => {
+    updateState()
+  }, [updateState])
+
+  useMapEvents({
+    zoomend: updateState,
+    moveend: updateState,
+  })
+
+  const points: OrgPoint[] = useMemo(() =>
+    locations.map((loc) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [loc.longitude, loc.latitude],
+      },
+      properties: {
+        cidade: loc.cidade,
+        estado: loc.estado,
+        quantidade: loc.quantidade,
+      },
+    })),
+    [locations]
+  )
+
+  const index = useMemo(() => {
+    const sc = new Supercluster<OrgProperties>({
+      radius: 60,
+      maxZoom: 16,
+      minZoom: 0,
+      reduce: (accumulated, props) => {
+        accumulated.quantidade += props.quantidade
+      },
+      map: (props) => ({
+        cidade: props.cidade,
+        estado: props.estado,
+        quantidade: props.quantidade,
+      }),
+    })
+    sc.load(points)
+    return sc
+  }, [points])
+
+  const clusters: ClusterOrPoint[] = useMemo(() => {
+    const b = bounds
+    return index.getClusters(
+      [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()],
+      Math.floor(zoom)
+    )
+  }, [index, bounds, zoom])
+
+  const maxClusterCount = useMemo(() => {
+    let max = 1
+    for (const c of clusters) {
+      const count = 'cluster' in c.properties && c.properties.cluster
+        ? (c.properties as Supercluster.ClusterProperties).point_count
+        : c.properties.quantidade
+      if (count > max) max = count
+    }
+    return max
+  }, [clusters])
+
+  const maxPointQuantidade = useMemo(
+    () => Math.max(...locations.map(l => l.quantidade), 1),
+    [locations]
+  )
+
+  const handleClusterClick = useCallback((clusterId: number, lat: number, lng: number) => {
+    const expansionZoom = Math.min(index.getClusterExpansionZoom(clusterId), 16)
+    map.flyTo([lat, lng], expansionZoom, { duration: 0.5 })
+  }, [index, map])
+
+  return (
+    <>
+      {clusters.map((feature) => {
+        const [lng, lat] = feature.geometry.coordinates
+        const isCluster = 'cluster' in feature.properties && feature.properties.cluster
+
+        if (isCluster) {
+          const clusterProps = feature.properties as Supercluster.ClusterProperties & OrgProperties
+          const pointCount = clusterProps.point_count
+          const totalQuantidade = clusterProps.quantidade
+          const radius = getClusterRadius(totalQuantidade, maxClusterCount, zoom)
+
+          return (
+            <CircleMarker
+              key={`cluster-${clusterProps.cluster_id}`}
+              center={[lat, lng]}
+              radius={radius}
+              pathOptions={{
+                fillColor: bubbleColor,
+                fillOpacity: isDark ? 0.4 : 0.5,
+                color: bubbleBorder,
+                weight: isDark ? 1 : 1.5,
+                opacity: isDark ? 0.6 : 0.8,
+              }}
+              eventHandlers={{
+                click: () => handleClusterClick(clusterProps.cluster_id, lat, lng),
+              }}
+            >
+              <Tooltip
+                direction="top"
+                offset={[0, -8]}
+                className="custom-tooltip"
+              >
+                <div className="text-center">
+                  <p className="font-semibold text-sm">
+                    {pointCount} {pointCount === 1 ? 'local' : 'locais'}
+                  </p>
+                  <p className="text-xs mt-0.5">
+                    <span className="font-bold" style={{ color: bubbleColor }}>
+                      {totalQuantidade}
+                    </span>{' '}
+                    {totalQuantidade === 1 ? 'organização' : 'organizações'}
+                  </p>
+                  <p className="text-[10px] mt-0.5 opacity-70">Clique para expandir</p>
+                </div>
+              </Tooltip>
+            </CircleMarker>
+          )
+        }
+
+        const props = feature.properties as OrgProperties
+        const radius = getPointRadius(props.quantidade, maxPointQuantidade)
+
+        return (
+          <CircleMarker
+            key={`point-${props.cidade}-${props.estado}-${lat}-${lng}`}
+            center={[lat, lng]}
+            radius={radius}
+            pathOptions={{
+              fillColor: bubbleColor,
+              fillOpacity: isDark ? 0.5 : 0.65,
+              color: bubbleBorder,
+              weight: isDark ? 1 : 1.5,
+              opacity: isDark ? 0.8 : 0.9,
+            }}
+          >
+            <Tooltip
+              direction="top"
+              offset={[0, -8]}
+              className="custom-tooltip"
+            >
+              <div className="text-center">
+                <p className="font-semibold text-sm">{props.cidade}, {props.estado}</p>
+                <p className="text-xs mt-0.5">
+                  <span className="font-bold" style={{ color: bubbleColor }}>
+                    {props.quantidade}
+                  </span>{' '}
+                  {props.quantidade === 1 ? 'organização' : 'organizações'}
+                </p>
+              </div>
+            </Tooltip>
+          </CircleMarker>
+        )
+      })}
+    </>
+  )
+}
+
 interface BrazilBubbleMapProps {
   data?: OrgLocation[]
   height?: number
@@ -92,12 +255,7 @@ export function BrazilBubbleMapCard({ data, height = 480 }: BrazilBubbleMapProps
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const locations = data ?? MOCK_DATA
-
-  const maxQuantidade = useMemo(
-    () => Math.max(...locations.map(l => l.quantidade)),
-    [locations]
-  )
+  const locations = data || []
 
   const totalOrgs = useMemo(
     () => locations.reduce((sum, l) => sum + l.quantidade, 0),
@@ -119,7 +277,7 @@ export function BrazilBubbleMapCard({ data, height = 480 }: BrazilBubbleMapProps
             Organizações por Região
           </h3>
           <span className="text-xs text-[#6b5d57] dark:text-[#7A716A]">
-            {totalOrgs} organizações em {locations.length} cidades
+            {locations.length} Locais
           </span>
         </div>
       </CardHeader>
@@ -129,7 +287,7 @@ export function BrazilBubbleMapCard({ data, height = 480 }: BrazilBubbleMapProps
             center={BRAZIL_CENTER}
             zoom={4}
             minZoom={3}
-            maxZoom={12}
+            maxZoom={18}
             zoomControl={false}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%' }}
@@ -140,36 +298,12 @@ export function BrazilBubbleMapCard({ data, height = 480 }: BrazilBubbleMapProps
               url={tileUrl}
             />
             <ZoomControls />
-            {locations.map((loc) => (
-              <CircleMarker
-                key={`${loc.cidade}-${loc.estado}`}
-                center={[loc.latitude, loc.longitude]}
-                radius={getRadius(loc.quantidade, maxQuantidade)}
-                pathOptions={{
-                  fillColor: bubbleColor,
-                  fillOpacity: isDark ? 0.45 : 0.6,
-                  color: bubbleBorder,
-                  weight: isDark ? 1 : 1.5,
-                  opacity: isDark ? 0.7 : 0.9,
-                }}
-              >
-                <Tooltip
-                  direction="top"
-                  offset={[0, -8]}
-                  className="custom-tooltip"
-                >
-                  <div className="text-center">
-                    <p className="font-semibold text-sm">{loc.cidade}, {loc.estado}</p>
-                    <p className="text-xs mt-0.5">
-                      <span className="font-bold" style={{ color: bubbleColor }}>
-                        {loc.quantidade}
-                      </span>{' '}
-                      {loc.quantidade === 1 ? 'organização' : 'organizações'}
-                    </p>
-                  </div>
-                </Tooltip>
-              </CircleMarker>
-            ))}
+            <ClusterLayer
+              locations={locations}
+              isDark={isDark}
+              bubbleColor={bubbleColor}
+              bubbleBorder={bubbleBorder}
+            />
           </MapContainer>
         </div>
       </CardContent>
