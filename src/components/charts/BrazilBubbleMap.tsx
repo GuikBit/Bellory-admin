@@ -134,7 +134,7 @@ function ClusterLayer({ locations, isDark, bubbleColor, bubbleBorder }: ClusterL
     return index.getClusters(
       [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()],
       Math.floor(zoom)
-    )
+    ) as ClusterOrPoint[]
   }, [index, bounds, zoom])
 
   const maxClusterCount = useMemo(() => {
