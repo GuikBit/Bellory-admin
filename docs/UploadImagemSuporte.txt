@@ -1,0 +1,224 @@
+API - Suporte Imagens (Base de Conhecimento IA)
+Base URL: /api/v1/admin/suporte-imagens
+Autenticação: Bearer Token (Admin JWT)
+
+Interfaces TypeScript
+interface SuporteImagemDTO {
+  nome: string;          // nome do arquivo salvo (ex: "tela-login.png")
+  url: string;           // URL pública completa para exibir a imagem
+  relativePath: string;  // path relativo (usado para deletar)
+  pasta: string;         // nome da pasta onde está (vazio = raiz)
+  tamanho: number;       // tamanho em bytes
+}
+
+interface SuportePastaDTO {
+  nome: string;          // nome da pasta
+  caminho: string;       // path completo (ex: "admin/suporte/fluxos")
+  totalImagens: number;  // quantidade de imagens na pasta
+}
+
+interface ResponseAPI<T> {
+  success: boolean;
+  message: string;
+  dados?: T;
+  errorCode?: number;
+  errors?: Record<string, string>;
+}
+
+1. Upload de Imagem
+POST /api/v1/admin/suporte-imagens/upload
+Content-Type: multipart/form-data
+
+Param	Tipo	Obrigatório	Descrição
+file	File	Sim	Arquivo de imagem (jpg, jpeg, png, gif, webp). Max 5MB
+pasta	string	Não	Pasta destino. Se omitido, salva na raiz /suporte
+nome	string	Não	Nome personalizado. Se omitido, usa o nome original do arquivo
+Comportamento do nome:
+
+nome=tela-login + arquivo .png -> salva como tela-login.png
+nome vazio/não enviado + arquivo screenshot.png -> salva como screenshot.png
+A extensão é sempre mantida do arquivo original
+Caracteres especiais são sanitizados para _
+Exemplo front-end:
+
+async function uploadImagem(file: File, pasta?: string, nome?: string) {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (pasta) formData.append("pasta", pasta);
+  if (nome) formData.append("nome", nome);
+
+  const response = await api.post<ResponseAPI<SuporteImagemDTO>>(
+    "/admin/suporte-imagens/upload",
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+  return response.data;
+}
+
+Response (201):
+
+{
+  "success": true,
+  "message": "Imagem enviada com sucesso.",
+  "dados": {
+    "nome": "tela-login.png",
+    "url": "https://api.bellory.com.br/uploads/admin/suporte/fluxos/tela-login.png",
+    "relativePath": "admin/suporte/fluxos/tela-login.png",
+    "pasta": "fluxos",
+    "tamanho": 245678
+  }
+}
+
+Response (400):
+
+{
+  "success": false,
+  "message": "Formato não permitido. Use: [jpg, jpeg, png, gif, webp]"
+}
+
+2. Listar Imagens
+GET /api/v1/admin/suporte-imagens?pasta={nome}
+
+Param	Tipo	Obrigatório	Descrição
+pasta	string	Não	Filtrar por pasta. Omitir = raiz
+Exemplo front-end:
+
+async function listarImagens(pasta?: string) {
+  const params = pasta ? { pasta } : {};
+  const response = await api.get<ResponseAPI<SuporteImagemDTO[]>>(
+    "/admin/suporte-imagens",
+    { params }
+  );
+  return response.data;
+}
+
+Response (200):
+
+{
+  "success": true,
+  "message": "Imagens listadas com sucesso.",
+  "dados": [
+    {
+      "nome": "tela-login.png",
+      "url": "https://api.bellory.com.br/uploads/admin/suporte/fluxos/tela-login.png",
+      "relativePath": "admin/suporte/fluxos/tela-login.png",
+      "pasta": "fluxos",
+      "tamanho": 123456
+    }
+  ]
+}
+
+3. Deletar Imagem
+DELETE /api/v1/admin/suporte-imagens?relativePath={path}
+
+Param	Tipo	Obrigatório	Descrição
+relativePath	string	Sim	Path relativo retornado no upload/listagem
+Exemplo front-end:
+
+async function deletarImagem(relativePath: string) {
+  const response = await api.delete<ResponseAPI<void>>(
+    "/admin/suporte-imagens",
+    { params: { relativePath } }
+  );
+  return response.data;
+}
+
+Response (200):
+
+{
+  "success": true,
+  "message": "Imagem deletada com sucesso."
+}
+
+4. Criar Pasta
+POST /api/v1/admin/suporte-imagens/pastas
+Content-Type: application/json
+
+Body:
+
+{ "nome": "fluxos-agendamento" }
+
+Nome sanitizado automaticamente (lowercase, especiais viram _).
+
+Exemplo front-end:
+
+async function criarPasta(nome: string) {
+  const response = await api.post<ResponseAPI<SuportePastaDTO>>(
+    "/admin/suporte-imagens/pastas",
+    { nome }
+  );
+  return response.data;
+}
+
+Response (201):
+
+{
+  "success": true,
+  "message": "Pasta criada com sucesso.",
+  "dados": {
+    "nome": "fluxos-agendamento",
+    "caminho": "admin/suporte/fluxos-agendamento",
+    "totalImagens": 0
+  }
+}
+
+5. Listar Pastas
+GET /api/v1/admin/suporte-imagens/pastas
+
+Exemplo front-end:
+
+async function listarPastas() {
+  const response = await api.get<ResponseAPI<SuportePastaDTO[]>>(
+    "/admin/suporte-imagens/pastas"
+  );
+  return response.data;
+}
+
+Response (200):
+
+{
+  "success": true,
+  "message": "Pastas listadas com sucesso.",
+  "dados": [
+    { "nome": "fluxos", "caminho": "admin/suporte/fluxos", "totalImagens": 5 },
+    { "nome": "erros-comuns", "caminho": "admin/suporte/erros-comuns", "totalImagens": 12 }
+  ]
+}
+
+6. Deletar Pasta
+DELETE /api/v1/admin/suporte-imagens/pastas?nome={nome}
+
+Param	Tipo	Obrigatório	Descrição
+nome	string	Sim	Nome da pasta
+Deleta a pasta e todas as imagens dentro dela.
+
+Exemplo front-end:
+
+async function deletarPasta(nome: string) {
+  const response = await api.delete<ResponseAPI<void>>(
+    "/admin/suporte-imagens/pastas",
+    { params: { nome } }
+  );
+  return response.data;
+}
+
+Response (200):
+
+{
+  "success": true,
+  "message": "Pasta deletada com sucesso."
+}
+
+Exibindo imagens
+O campo url é público, use direto no <img>:
+
+<img :src="imagem.url" :alt="imagem.nome" />
+
+Resumo dos endpoints
+Método	Endpoint	Descrição
+POST	/admin/suporte-imagens/upload	Upload de imagem
+GET	/admin/suporte-imagens	Listar imagens
+DELETE	/admin/suporte-imagens	Deletar imagem
+POST	/admin/suporte-imagens/pastas	Criar pasta
+GET	/admin/suporte-imagens/pastas	Listar pastas
+DELETE	/admin/suporte-imagens/pastas	Deletar pasta + imagens

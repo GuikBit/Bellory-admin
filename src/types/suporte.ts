@@ -28,12 +28,16 @@ export interface Sessao {
   ultima_mensagem?: string
 }
 
+export type AvaliacaoMensagem = 'positivo' | 'negativo' | null
+
 export interface Mensagem {
   id: string
   sessao_id: string
   autor: AutorMensagem
   conteudo: string
   imagens: string[] | null
+  avaliacao: AvaliacaoMensagem
+  atendente_nome: string | null
   criado_em: string
 }
 
@@ -50,18 +54,20 @@ export interface DocumentoBase {
 }
 
 export interface DashboardSuporte {
-  totalAtendimentos: number | unknown
-  atendimentosHoje: number | unknown
-  resolvidosPeloAgente: number | unknown
-  transferidosParaHumano: number | unknown
-  tempoMedioResposta: string
-  satisfacao: number | unknown
-  taxaResolucao: number | unknown
-  atendimentosEmAndamento: number | unknown
-  topPerguntas: Array<{ pergunta: string; quantidade: number }>
-  atendimentosRecentes: Sessao[]
-  contagemPositivas: number | unknown
-  contagemNegativas: number | unknown
+  total_sessoes: number
+  sessoes_hoje: number
+  resolvidas_ia: number
+  transferidas: number
+  ativas: number
+  taxa_resolucao: number
+  satisfacao: {
+    positivo: number
+    negativo: number
+    total: number
+    percentual: number
+  }
+  top_assuntos: Array<{ assunto: string; total: number | string }>
+  sessoes_recentes: Sessao[]
 }
 
 export interface AtendimentosResponse {
@@ -78,4 +84,28 @@ export interface AtendimentosResponse {
 export interface AtendimentoDetalhe {
   sessao: Sessao
   mensagens: Mensagem[]
+}
+
+// ── Imagens da Base de Conhecimento ──────────────────────────────────
+
+export interface SuporteImagem {
+  nome: string
+  url: string
+  relativePath: string
+  pasta: string
+  tamanho: number
+}
+
+export interface SuportePasta {
+  nome: string
+  caminho: string
+  totalImagens: number
+}
+
+export interface ResponseAPI<T> {
+  success: boolean
+  message: string
+  dados?: T
+  errorCode?: number
+  errors?: Record<string, string>
 }

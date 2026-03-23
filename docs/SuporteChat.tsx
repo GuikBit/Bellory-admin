@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, Send, X, Loader2, Trash2, ImagePlus, UserCheck } from "lucide-react";
+import { Bot, BotMessageSquare, Send, X, Loader2, Trash2, ImagePlus, UserCheck, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useLocation } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "../../../global/Theme-context";
+import { useAuth } from "../../../global/AuthContext";
 
 // ── Tipos ────────────────────────────────────────────────────────────
+
+type Avaliacao = "positivo" | "negativo" | null;
 
 interface Mensagem {
   id: string;
@@ -11,6 +15,7 @@ interface Mensagem {
   texto: string;
   imagens?: string[]; // base64 data URLs
   timestamp: Date;
+  nomeOperador?: string; // nome do atendente humano
 }
 
 interface SuporteChatProps {
@@ -66,40 +71,59 @@ function detectarModulo(pathname: string): ModuloInfo {
 const STORAGE_KEY = "bellory_suporte_chat";
 const TTL_MS = 30 * 60 * 1000; // 30 minutos
 const POLL_URL_BASE = "https://auto.bellory.com.br/webhook/suporte_mensagens_poll";
+const AVALIAR_URL = "https://auto.bellory.com.br/webhook/suporte_avaliar_mensagem";
+const ENCERRAR_INATIVIDADE_URL = "https://auto.bellory.com.br/webhook/suporte_encerrar_inatividade";
+const CONFIG_URL = "https://auto.bellory.com.br/webhook/suporte_configuracao";
+
+const NOME_BOT_PADRAO = "Assistente Bellory";
 
 interface ChatStorage {
   mensagens: (Omit<Mensagem, "timestamp"> & { timestamp: string })[];
   salvoEm: number;
   sessionId: string;
   modo: "ia" | "humano";
+  avaliacoes: Record<string, Avaliacao>;
 }
 
-function salvarChat(mensagens: Mensagem[], sessionId: string, modo: "ia" | "humano") {
+function salvarChat(mensagens: Mensagem[], sessionId: string, modo: "ia" | "humano", avaliacoes: Record<string, Avaliacao>) {
   const data: ChatStorage = {
     mensagens: mensagens.map((m) => ({ ...m, timestamp: m.timestamp.toISOString() })),
     salvoEm: Date.now(),
     sessionId,
     modo,
+    avaliacoes,
   };
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-function carregarChat(): { mensagens: Mensagem[]; sessionId: string; modo: "ia" | "humano" } | null {
+interface ChatCarregado {
+  mensagens: Mensagem[];
+  sessionId: string;
+  modo: "ia" | "humano";
+  avaliacoes: Record<string, Avaliacao>;
+  expirado: boolean;
+}
+
+function carregarChat(): ChatCarregado | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
 
     const data: ChatStorage = JSON.parse(raw);
+    const mensagens = data.mensagens.map((m) => ({ ...m, timestamp: new Date(m.timestamp) }));
 
-    if (Date.now() - data.salvoEm > TTL_MS) {
-      sessionStorage.removeItem(STORAGE_KEY);
-      return null;
-    }
+    // Verifica se a última mensagem é mais antiga que 30 minutos
+    const ultimaMensagem = mensagens.length > 0
+      ? mensagens[mensagens.length - 1].timestamp.getTime()
+      : data.salvoEm;
+    const expirado = Date.now() - ultimaMensagem > TTL_MS;
 
     return {
-      mensagens: data.mensagens.map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
+      mensagens,
       sessionId: data.sessionId || '',
       modo: data.modo || "ia",
+      avaliacoes: data.avaliacoes || {},
+      expirado,
     };
   } catch {
     sessionStorage.removeItem(STORAGE_KEY);
@@ -133,29 +157,72 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
   // Estado inicial carregado do storage
   const savedChat = useMemo(() => carregarChat(), []);
 
+  // Se a sessão anterior expirou, inicializa limpo (o useEffect abaixo avisa o backend)
+  const chatExpirado = savedChat?.expirado ?? false;
+  const sessionExpiradaId = chatExpirado ? savedChat?.sessionId : null;
+
   const [mensagens, setMensagens] = useState<Mensagem[]>(() => {
-    return savedChat?.mensagens && savedChat.mensagens.length > 0
-      ? savedChat.mensagens
-      : [criarMensagemBoasVindas(moduloAtual.nome)];
+    if (chatExpirado || !savedChat?.mensagens?.length) {
+      return [criarMensagemBoasVindas(moduloAtual.nome)];
+    }
+    return savedChat.mensagens;
   });
   const [sessionId, setSessionId] = useState<string>(() => {
+    if (chatExpirado) return crypto.randomUUID();
     return savedChat?.sessionId || crypto.randomUUID();
   });
-  const [modo, setModo] = useState<"ia" | "humano">(savedChat?.modo || "ia");
+  const [modo, setModo] = useState<"ia" | "humano">(() => {
+    if (chatExpirado) return "ia";
+    return savedChat?.modo || "ia";
+  });
   const [input, setInput] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [anexos, setAnexos] = useState<string[]>([]);
   const [lastPollTime, setLastPollTime] = useState<string>("");
+  const [avaliacoes, setAvaliacoes] = useState<Record<string, Avaliacao>>(() => {
+    if (chatExpirado) return {};
+    return savedChat?.avaliacoes || {};
+  });
+
+  const [nomeBot, setNomeBot] = useState(NOME_BOT_PADRAO);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const moduloAnteriorRef = useRef(moduloAtual.nome);
 
+  // ── Buscar configuração do agente ─────────────────────────────────
+
+  useEffect(() => {
+    fetch(CONFIG_URL)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.nome_agente) setNomeBot(data.nome_agente);
+      })
+      .catch(() => {});
+  }, []);
+
+  // ── Encerrar sessão expirada no backend ───────────────────────────
+
+  useEffect(() => {
+    if (!sessionExpiradaId) return;
+
+    limparStorage();
+
+    // Avisa o backend que a sessão foi encerrada por inatividade
+    fetch(ENCERRAR_INATIVIDADE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: sessionExpiradaId }),
+    }).catch(() => {
+      // silently fail — a sessão já foi limpa localmente
+    });
+  }, [sessionExpiradaId]);
+
   // Persiste no sessionStorage a cada mudança
   useEffect(() => {
-    salvarChat(mensagens, sessionId, modo);
-  }, [mensagens, sessionId, modo]);
+    salvarChat(mensagens, sessionId, modo, avaliacoes);
+  }, [mensagens, sessionId, modo, avaliacoes]);
 
   // Quando muda de módulo, avisa no chat
   useEffect(() => {
@@ -180,6 +247,11 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
 
   // ── Polling quando modo humano ─────────────────────────────────────
 
+  const lastPollTimeRef = useRef(lastPollTime);
+  useEffect(() => {
+    lastPollTimeRef.current = lastPollTime;
+  }, [lastPollTime]);
+
   useEffect(() => {
     if (modo !== "humano") return;
 
@@ -189,29 +261,40 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
     const poll = async () => {
       if (!ativo) return;
       try {
-        const params = new URLSearchParams({ sessionId });
-        if (lastPollTime) params.append("after", lastPollTime);
-
+        const after = lastPollTimeRef.current || new Date().toISOString();
+        const params = new URLSearchParams({ sessionId, after });
         const res = await fetch(`${POLL_URL_BASE}?${params}`);
         if (!res.ok) return;
 
         const data = await res.json();
 
         if (data.mensagens && data.mensagens.length > 0) {
-          const novas: Mensagem[] = data.mensagens.map((m: { id: string; autor: string; conteudo: string; criado_em: string }) => ({
+          const novas: Mensagem[] = data.mensagens.map((m: { id: string; autor: string; conteudo: string; criado_em: string; atendente_nome?: string }) => ({
             id: m.id || crypto.randomUUID(),
-            remetente: m.autor === "humano" ? "assistente" as const : "sistema" as const,
+            remetente: m.autor === "humano" ? "assistente" as const : m.autor === "agente" ? "assistente" as const : "sistema" as const,
             texto: m.conteudo,
             timestamp: new Date(m.criado_em),
+            nomeOperador: m.autor === "humano" ? (m.atendente_nome || undefined) : undefined,
           }));
 
-          setMensagens((prev) => [...prev, ...novas]);
-          setLastPollTime(data.mensagens[data.mensagens.length - 1].criado_em);
+          // Deduplica por ID para evitar mensagens repetidas
+          setMensagens((prev) => {
+            const idsExistentes = new Set(prev.map((m) => m.id));
+            const realmente_novas = novas.filter((m) => !idsExistentes.has(m.id));
+            return realmente_novas.length > 0 ? [...prev, ...realmente_novas] : prev;
+          });
+
+          const ultimoCriadoEm = data.mensagens[data.mensagens.length - 1].criado_em;
+          lastPollTimeRef.current = ultimoCriadoEm;
+          setLastPollTime(ultimoCriadoEm);
         }
 
-        // Se resolvido, voltar para modo IA
+        // Se resolvido, voltar para modo IA com nova sessão
         if (data.status === "resolvido") {
           setModo("ia");
+          setSessionId(crypto.randomUUID());
+          setLastPollTime("");
+          lastPollTimeRef.current = "";
           setMensagens((prev) => [
             ...prev,
             {
@@ -237,7 +320,7 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
       ativo = false;
       clearTimeout(timer);
     };
-  }, [modo, sessionId, lastPollTime]);
+  }, [modo, sessionId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -356,6 +439,8 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
 
       const data = await response.json();
 
+      console.log(data)
+
       // Se o n8n retornar um sessionId diferente, usar o do n8n
       if (data.sessionId && data.sessionId !== sessionId) {
         setSessionId(data.sessionId);
@@ -364,8 +449,12 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
         const novoModo = data.modo as "ia" | "humano";
         if (novoModo !== modo) {
           setModo(novoModo);
-          // Se transferido, mostrar mensagem de sistema
+          // Se transferido, mostrar mensagem de sistema e marcar o timestamp para o polling
           if (novoModo === "humano" && data.transferido) {
+            // Usa o timestamp do servidor (criado_em) se disponível, senão usa NOW do banco via resposta
+            const pollStart = data.criado_em || data.timestamp || new Date().toISOString();
+            setLastPollTime(pollStart);
+            lastPollTimeRef.current = pollStart;
             setMensagens((prev) => [
               ...prev,
               {
@@ -380,7 +469,7 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
       }
 
       const respostaAssistente: Mensagem = {
-        id: crypto.randomUUID(),
+        id: data.mensagemId || crypto.randomUUID(),
         remetente: "assistente",
         texto: data.resposta || data.output || data.message || "Desculpe, não consegui processar sua solicitação.",
         timestamp: new Date(),
@@ -410,11 +499,36 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
     }
   };
 
+  // ── Avaliar mensagem do agente ────────────────────────────────────
+
+  const handleAvaliar = useCallback(async (mensagemId: string, valor: "positivo" | "negativo") => {
+    const atual = avaliacoes[mensagemId];
+    const novaAvaliacao: Avaliacao = atual === valor ? null : valor;
+
+    setAvaliacoes((prev) => ({ ...prev, [mensagemId]: novaAvaliacao }));
+
+    try {
+      await fetch(AVALIAR_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mensagemId,
+          sessionId,
+          avaliacao: novaAvaliacao,
+        }),
+      });
+    } catch {
+      // Reverte em caso de erro
+      setAvaliacoes((prev) => ({ ...prev, [mensagemId]: atual ?? null }));
+    }
+  }, [avaliacoes, sessionId]);
+
   const limparConversa = () => {
     limparStorage();
     setSessionId(crypto.randomUUID());
     setModo("ia");
     setLastPollTime("");
+    setAvaliacoes({});
     setMensagens([criarMensagemBoasVindas(moduloAtual.nome)]);
   };
 
@@ -448,8 +562,57 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
   };
 
   const formatarLinha = (linha: string) => {
+    // Primeiro, extrair imagens markdown ![alt](url)
+    const regexImagem = /(!\[([^\]]*)\]\(([^)]+)\))/g;
+    const partesComImagem = linha.split(regexImagem);
+
+    if (partesComImagem.length > 1) {
+      const resultado: React.ReactNode[] = [];
+      let idx = 0;
+      for (let i = 0; i < partesComImagem.length; i++) {
+        const parte = partesComImagem[i];
+        // O split com grupos captura: [antes, match_completo, alt, url, depois, ...]
+        // Padrão: texto, fullMatch, alt, url, texto, fullMatch, alt, url, ...
+        if (parte && parte.startsWith("![")) {
+          // Este é o match completo — pular, usar alt e url a seguir
+          const alt = partesComImagem[i + 1] || "";
+          const url = partesComImagem[i + 2] || "";
+          resultado.push(
+            <a
+              key={`img-${idx++}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block my-2"
+            >
+              <img
+                src={url}
+                alt={alt}
+                className="rounded-lg w-full object-cover hover:opacity-90 transition-opacity border border-gray-200 dark:border-gray-700"
+                style={{ maxHeight: '360px' }}
+              />
+              {alt && (
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 block">
+                  {alt}
+                </span>
+              )}
+            </a>
+          );
+          i += 2; // pular alt e url
+        } else if (parte) {
+          // Texto normal — formatar inline
+          resultado.push(<span key={`txt-${idx++}`}>{formatarInline(parte)}</span>);
+        }
+      }
+      return resultado;
+    }
+
+    return formatarInline(linha);
+  };
+
+  const formatarInline = (texto: string) => {
     const regex = /(\*\*.*?\*\*|\*(?!\s).*?(?<!\s)\*|_(?!\s).*?(?<!\s)_|~(?!\s).*?(?<!\s)~|`[^`]+`)/g;
-    const partes = linha.split(regex);
+    const partes = texto.split(regex);
 
     return partes.map((parte, i) => {
       if (parte.startsWith("**") && parte.endsWith("**")) {
@@ -566,6 +729,25 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
                     ${msg.remetente === "usuario" ? "bg-primary":"dark:bg-[#262626] bg-white dark:text-white text-[#374151]"}
                     `}
                   >
+                    {msg.remetente === "assistente" && (
+                      <div className="flex items-center gap-1.5 mb-1">
+                        {msg.nomeOperador ? (
+                          <>
+                            <UserCheck size={12} className="text-[#4f6f64] dark:text-[#6B8F82] shrink-0" />
+                            <span className="text-xs font-semibold text-[#4f6f64] dark:text-[#6B8F82]">
+                              {msg.nomeOperador}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <BotMessageSquare size={12} className="text-gray-400 dark:text-gray-500 shrink-0" />
+                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">
+                              {nomeBot}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )}
                     {msg.imagens && msg.imagens.length > 0 && (
                       <div className={`flex flex-wrap gap-1.5 ${msg.texto ? "mb-1.5" : ""}`}>
                         {msg.imagens.map((img, idx) => (
@@ -579,16 +761,51 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
                         ))}
                       </div>
                     )}
+
                     {msg.texto && renderTexto(msg.texto)}
                     <div
-                      className={`text-[10px] mt-1 opacity-50 ${
-                        msg.remetente === "usuario" ? "text-right" : "text-left"
+                      className={`flex items-center gap-2 mt-1 ${
+                        msg.remetente === "usuario" ? "justify-end" : "justify-between"
                       }`}
                     >
-                      {msg.timestamp.toLocaleTimeString("pt-BR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      <span className="text-[10px] opacity-50">
+                        {msg.timestamp.toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      {msg.remetente === "assistente" && msg.id !== "welcome" && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleAvaliar(msg.id, "positivo")}
+                            className="p-0.5 rounded transition-all hover:scale-110 cursor-pointer"
+                            title="Resposta útil"
+                          >
+                            <ThumbsUp
+                              size={13}
+                              className={
+                                avaliacoes[msg.id] === "positivo"
+                                  ? "fill-green-500 text-green-500"
+                                  : "text-gray-400 hover:text-green-500"
+                              }
+                            />
+                          </button>
+                          <button
+                            onClick={() => handleAvaliar(msg.id, "negativo")}
+                            className="p-0.5 rounded transition-all hover:scale-110 cursor-pointer"
+                            title="Resposta não ajudou"
+                          >
+                            <ThumbsDown
+                              size={13}
+                              className={
+                                avaliacoes[msg.id] === "negativo"
+                                  ? "fill-red-500 text-red-500"
+                                  : "text-gray-400 hover:text-red-500"
+                              }
+                            />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

@@ -1,10 +1,15 @@
 import axios from 'axios'
+import { api } from './api'
 import type {
   DashboardSuporte,
   AtendimentosResponse,
   AtendimentoDetalhe,
   DocumentoBase,
   Mensagem,
+  AvaliacaoMensagem,
+  SuporteImagem,
+  SuportePasta,
+  ResponseAPI,
 } from '../types/suporte'
 
 const N8N_BASE = 'https://auto.bellory.com.br'
@@ -103,4 +108,76 @@ export async function atualizarDocumentoStatus(payload: {
 
 export async function excluirDocumento(filename: string): Promise<void> {
   await n8nApi.post('/webhook/suporte_excluir_documento', { filename })
+}
+
+// ── Avaliação de Mensagens ────────────────────────────────────────
+
+export async function avaliarMensagem(payload: {
+  mensagemId: string
+  sessionId: string
+  avaliacao: 'positivo' | 'negativo' | null
+}): Promise<void> {
+  await n8nApi.post('/webhook/suporte_avaliar_mensagem', payload)
+}
+
+// ── Encerramento por Inatividade ──────────────────────────────────
+
+export async function encerrarPorInatividade(sessionId: string): Promise<void> {
+  await n8nApi.post('/webhook/suporte_encerrar_inatividade', { sessionId })
+}
+
+// ── Imagens da Base de Conhecimento ─────────────────────────────────
+
+export async function uploadImagem(file: File, pasta?: string, nome?: string): Promise<ResponseAPI<SuporteImagem>> {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (pasta) formData.append('pasta', pasta)
+  if (nome) formData.append('nome', nome)
+
+  const { data } = await api.post<ResponseAPI<SuporteImagem>>(
+    '/admin/suporte-imagens/upload',
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  )
+  return data
+}
+
+export async function listarImagens(pasta?: string): Promise<ResponseAPI<SuporteImagem[]>> {
+  const params = pasta ? { pasta } : {}
+  const { data } = await api.get<ResponseAPI<SuporteImagem[]>>(
+    '/admin/suporte-imagens',
+    { params }
+  )
+  return data
+}
+
+export async function deletarImagem(relativePath: string): Promise<ResponseAPI<void>> {
+  const { data } = await api.delete<ResponseAPI<void>>(
+    '/admin/suporte-imagens',
+    { params: { relativePath } }
+  )
+  return data
+}
+
+export async function criarPasta(nome: string): Promise<ResponseAPI<SuportePasta>> {
+  const { data } = await api.post<ResponseAPI<SuportePasta>>(
+    '/admin/suporte-imagens/pastas',
+    { nome }
+  )
+  return data
+}
+
+export async function listarPastas(): Promise<ResponseAPI<SuportePasta[]>> {
+  const { data } = await api.get<ResponseAPI<SuportePasta[]>>(
+    '/admin/suporte-imagens/pastas'
+  )
+  return data
+}
+
+export async function deletarPasta(nome: string): Promise<ResponseAPI<void>> {
+  const { data } = await api.delete<ResponseAPI<void>>(
+    '/admin/suporte-imagens/pastas',
+    { params: { nome } }
+  )
+  return data
 }

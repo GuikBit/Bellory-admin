@@ -10,56 +10,66 @@
           "allowedOrigins": "*"
         }
       },
-      "id": "499cefde-5a8e-49c4-b366-c0305e0ca76b",
+      "id": "339ee9a5-ed94-40e2-92c0-f918aaf54835",
       "name": "Webhook Entrada",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-800, 0],
+      "position": [
+        -2944,
+        208
+      ],
       "webhookId": "suporte"
     },
     {
       "parameters": {
         "jsCode": "const body = $input.first().json.body;\n\nconst mensagem = body.mensagem || '';\nconst sessionId = body.sessionId || null;\nconst modulo = body.modulo || {};\nconst organizacao = body.organizacao || {};\nconst usuario = body.usuario || {};\nconst apiKey = body.apiKey || '';\nconst imagens = body.imagens || [];\nconst historico = body.historico || [];\n\nconst historicoFormatado = historico\n  .map(h => `${h.remetente === 'usuario' ? 'Usuário' : 'Assistente'}: ${h.texto}`)\n  .join('\\n');\n\nconst contextoSistema = [\n  `Módulo atual: ${modulo.nome || 'Não identificado'}`,\n  `Descrição do módulo: ${modulo.descricao || 'N/A'}`,\n  `Rota: ${modulo.rota || 'N/A'}`,\n  `Organização: ${organizacao.nome || 'N/A'} (ID: ${organizacao.id || 'N/A'})`,\n  `Tenant ID: ${organizacao.tenantId || 'N/A'}`,\n  `Usuário: ${usuario.nome || 'N/A'} (${usuario.email || 'N/A'})`,\n  `Role: ${usuario.role || 'N/A'}`,\n].join('\\n');\n\nreturn [{\n  json: {\n    sessionId,\n    chatInput: mensagem,\n    mensagem,\n    contextoSistema,\n    historicoFormatado,\n    modulo,\n    organizacao,\n    usuario,\n    imagens,\n    apiKey\n  }\n}];"
       },
-      "id": "b55cf2a6-6b1e-4519-8eb1-403b26f1e654",
+      "id": "9146dd6a-c2ac-42c3-bb88-15b13bd8ed32",
       "name": "Processar Dados",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-560, 0]
+      "position": [
+        -2704,
+        208
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT * FROM public.sessoes WHERE id = '{{ $json.sessionId }}' AND status IN ('ativo', 'transferido') AND ultima_mensagem_em > NOW() - INTERVAL '30 minutes' LIMIT 1",
         "options": {
-          "queryReplacement": "{{ $json.sessionId }}",
-          "outputColumns": "",
-          "nodeVersion": 2.5
+          "queryReplacement": "{{ $json.sessionId }}"
         }
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000003",
+      "id": "4abccab9-575d-4f1d-8304-34056c864801",
       "name": "Buscar Sessao",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-320, 0],
+      "position": [
+        -2464,
+        208
+      ],
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "lPGdtsBbIuYx6qzc",
           "name": "bellory_suporte"
         }
       },
-      "onError": "continueRegularOutput",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "jsCode": "const items = $input.all();\nconst dados = $('Processar Dados').first().json;\n\n// Verifica se a query do Postgres retornou uma sessão válida\nconst hasSession = items.length > 0 && items[0].json && items[0].json.id;\n\nlet sessionId;\nlet modo;\nlet tentativas_falhas;\nlet isNew = false;\n\nif (hasSession) {\n  const sessao = items[0].json;\n  sessionId = sessao.id;\n  modo = sessao.modo || 'ia';\n  tentativas_falhas = sessao.tentativas_falhas || 0;\n} else {\n  // Usa o sessionId que o cliente enviou\n  sessionId = dados.sessionId;\n  if (!sessionId) {\n    sessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {\n      const r = Math.random() * 16 | 0;\n      const v = c === 'x' ? r : (r & 0x3 | 0x8);\n      return v.toString(16);\n    });\n  }\n  modo = 'ia';\n  tentativas_falhas = 0;\n  isNew = true;\n}\n\nreturn [{\n  json: {\n    sessionId,\n    modo,\n    tentativas_falhas,\n    isNew,\n    chatInput: dados.chatInput,\n    mensagem: dados.mensagem,\n    contextoSistema: dados.contextoSistema,\n    historicoFormatado: dados.historicoFormatado\n  }\n}];"
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000004",
+      "id": "1fcd8280-f284-4459-914e-777d52961cf6",
       "name": "Criar ou Reutilizar Sessao",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-80, 0]
+      "position": [
+        -2224,
+        208
+      ]
     },
     {
       "parameters": {
@@ -67,11 +77,14 @@
         "query": "INSERT INTO public.sessoes (id, organizacao_id, organizacao_nome, organizacao_tenant, usuario_id, usuario_nome, usuario_email, modulo, assunto, status, modo, tentativas_falhas, criado_em, atualizado_em, ultima_mensagem_em)\nVALUES (\n  '{{ $json.sessionId }}',\n  {{ $('Processar Dados').item.json.organizacao.id || 'NULL' }},\n  '{{ ($('Processar Dados').item.json.organizacao.nome || '').replace(/'/g, \"''\") }}',\n  '{{ ($('Processar Dados').item.json.organizacao.tenantId || '').replace(/'/g, \"''\") }}',\n  {{ $('Processar Dados').item.json.usuario.id || 'NULL' }},\n  '{{ ($('Processar Dados').item.json.usuario.nome || '').replace(/'/g, \"''\") }}',\n  '{{ ($('Processar Dados').item.json.usuario.email || '').replace(/'/g, \"''\") }}',\n  '{{ ($('Processar Dados').item.json.modulo.nome || '').replace(/'/g, \"''\") }}',\n  '{{ ($('Processar Dados').item.json.mensagem || '').substring(0, 200).replace(/'/g, \"''\") }}',\n  'ativo',\n  '{{ $json.modo }}',\n  {{ $json.tentativas_falhas }},\n  NOW(), NOW(), NOW()\n)\nON CONFLICT (id) DO UPDATE SET\n  ultima_mensagem_em = NOW(),\n  atualizado_em = NOW()",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000005",
+      "id": "22483d28-5be8-4ce5-9240-9b92d149c800",
       "name": "Upsert Sessao",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [160, 0],
+      "position": [
+        -1984,
+        208
+      ],
       "credentials": {
         "postgres": {
           "id": "lPGdtsBbIuYx6qzc",
@@ -86,11 +99,14 @@
         "query": "INSERT INTO public.mensagens (sessao_id, autor, conteudo, criado_em)\nVALUES (\n  '{{ $('Criar ou Reutilizar Sessao').item.json.sessionId }}',\n  'cliente',\n  '{{ ($('Processar Dados').item.json.mensagem || '').replace(/'/g, \"''\") }}',\n  NOW()\n)",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000006",
+      "id": "6fdd8466-a10d-4546-a0df-f1014a634e72",
       "name": "Salvar Msg Cliente",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [400, 0],
+      "position": [
+        -1744,
+        208
+      ],
       "credentials": {
         "postgres": {
           "id": "lPGdtsBbIuYx6qzc",
@@ -105,16 +121,42 @@
           "values": [
             {
               "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-                "conditions": [{ "leftValue": "={{ $('Criar ou Reutilizar Sessao').item.json.modo }}", "rightValue": "ia", "operator": { "type": "string", "operation": "equals" } }],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Criar ou Reutilizar Sessao').item.json.modo }}",
+                    "rightValue": "ia",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
                 "combinator": "and"
               },
               "renameOutput": "IA"
             },
             {
               "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-                "conditions": [{ "leftValue": "={{ $('Criar ou Reutilizar Sessao').item.json.modo }}", "rightValue": "humano", "operator": { "type": "string", "operation": "equals" } }],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Criar ou Reutilizar Sessao').item.json.modo }}",
+                    "rightValue": "humano",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
                 "combinator": "and"
               },
               "renameOutput": "Humano"
@@ -123,21 +165,27 @@
         },
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000007",
+      "id": "c75a5ed7-1755-49dc-b2ca-df9b2ec22077",
       "name": "Modo do Atendimento",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [640, 0]
+      "position": [
+        -1504,
+        208
+      ]
     },
     {
       "parameters": {
         "jsCode": "// Prepara os dados para alimentar o Agente IA\nconst sessao = $('Criar ou Reutilizar Sessao').first().json;\nconst dados = $('Processar Dados').first().json;\n\nreturn [{\n  json: {\n    sessionId: sessao.sessionId,\n    chatInput: dados.chatInput,\n    contextoSistema: dados.contextoSistema,\n    historicoFormatado: dados.historicoFormatado\n  }\n}];"
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000020",
+      "id": "1a4a0d71-62df-46c7-b0ff-f48ec1b86fde",
       "name": "Preparar para IA",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, -120]
+      "position": [
+        -1280,
+        384
+      ]
     },
     {
       "parameters": {
@@ -146,11 +194,14 @@
           "temperature": 0.7
         }
       },
-      "id": "20ddb4e3-1843-4ecc-8d3d-1e181d83714c",
+      "id": "6f7273be-19a7-49f4-837c-03d2f346e346",
       "name": "Gemini Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
-      "position": [1000, 100],
+      "position": [
+        -1216,
+        608
+      ],
       "credentials": {
         "googlePalmApi": {
           "id": "qyQQ5ZNt8xIXySJ4",
@@ -161,14 +212,17 @@
     {
       "parameters": {
         "options": {
-          "systemMessage": "=Você é o assistente virtual de suporte da Bellory, uma plataforma SaaS para barbearias e salões de beleza.\n\n## Suas responsabilidades:\n- Ajudar o usuário a utilizar o sistema Bellory\n- Responder dúvidas sobre funcionalidades do módulo em que ele está\n- Guiar o usuário passo a passo quando necessário\n- Ser objetivo e direto nas respostas\n\n## Contexto atual:\n{{ $json.contextoSistema }}\n\n## Módulos do sistema Bellory:\n- **Dashboard**: Painel com métricas, gráficos de faturamento, agendamentos do dia e resumos gerais\n- **Agendamento**: Calendário de agendamentos, criação/edição de horários, filtros por colaborador/serviço/status, configurações de agendamento. Para agendar um serviço manualmente, o colaborador precisa ter todos os serviços que ele ira fazer, vinculados a ele (pode ser acessado em colaborador selecionar o colaborador especificado, e em colaborador detalhes, ir em Serviços. Por padrão o só ira listar os serviços vinculados, desmarvar a opção e selecionar os serviços desejados), e o colaborador também precisa ter o plano de horario definido ( no mesmo caminho do anterior, porem procurar a opção Plano de Horario, e criar ou editar o plano de horario do colaborador).\n- **Serviços**: Cadastro e gestão de serviços oferecidos, categorias, preços e duração\n- **Colaboradores**: Gestão de funcionários, horários de trabalho, comissões e perfil individual\n- **Clientes**: Base de clientes, histórico de atendimentos, perfil detalhado\n- **E-commerce/Produtos**: Catálogo de produtos para venda, estoque e preços\n- **Financeiro**: Fluxo de caixa, receitas, despesas e relatórios financeiros\n- **Relatórios**: Análises e métricas detalhadas do negócio\n- **Notificações**: Central de notificações e lembretes automáticos\n- **Configurações**: Dados da empresa, personalização, landing pages, WhatsApp, API keys, questionários\n- **Assinatura**: Gestão do plano, upgrade/downgrade, pagamentos\n\n## Regras:\n1. Responda SEMPRE em português brasileiro\n2. Seja conciso, mas completo — evite respostas genéricas\n3. Se não souber a resposta, diga que vai encaminhar para o suporte humano\n4. Nunca invente funcionalidades que não existam\n5. Use **negrito** para destacar nomes de botões, menus ou ações importantes\n6. Se o usuário pedir algo que envolve ação técnica (ex: alterar dados via API), oriente-o sem executar\n7. Considere o role do usuário para adaptar a resposta (ADMIN tem acesso total, FUNCIONARIO tem acesso limitado)\n8. Não repita informações do histórico — seja contextual\n9. Quando for descrever funcionalidades de um modulo, crie uma lista de passo a passo.\n10. Sempre formte as mensagens com a formatação de texto do whastapp."
+          "systemMessage": "=Você é o assistente virtual de suporte da Bellory, uma plataforma SaaS para barbearias e salões de beleza.\n\n## Suas responsabilidades:\n- Ajudar o usuário a utilizar o sistema Bellory\n- Responder dúvidas sobre funcionalidades do módulo em que ele está\n- Guiar o usuário passo a passo quando necessário\n- Ser objetivo e direto nas respostas\n\n## Contexto atual:\n{{ $json.contextoSistema }}\n\n## Módulos do sistema Bellory:\n- **Dashboard**: Painel com métricas, gráficos de faturamento, agendamentos do dia e resumos gerais\n- **Agendamento**: Calendário de agendamentos, criação/edição de horários, filtros por colaborador/serviço/status, configurações de agendamento. Para agendar um serviço manualmente, o colaborador precisa ter todos os serviços que ele ira fazer, vinculados a ele (pode ser acessado em colaborador selecionar o colaborador especificado, e em colaborador detalhes, ir em Serviços. Por padrão o só ira listar os serviços vinculados, desmarvar a opção e selecionar os serviços desejados), e o colaborador também precisa ter o plano de horario definido ( no mesmo caminho do anterior, porem procurar a opção Plano de Horario, e criar ou editar o plano de horario do colaborador).\n- **Serviços**: Cadastro e gestão de serviços oferecidos, categorias, preços e duração\n- **Colaboradores**: Gestão de funcionários, horários de trabalho, comissões e perfil individual\n- **Clientes**: Base de clientes, histórico de atendimentos, perfil detalhado\n- **E-commerce/Produtos**: Catálogo de produtos para venda, estoque e preços\n- **Financeiro**: Fluxo de caixa, receitas, despesas e relatórios financeiros\n- **Relatórios**: Análises e métricas detalhadas do negócio\n- **Notificações**: Central de notificações e lembretes automáticos\n- **Configurações**: Dados da empresa, personalização, landing pages, WhatsApp, API keys, questionários\n- **Assinatura**: Gestão do plano, upgrade/downgrade, pagamentos\n\n## Regras:\n1. Responda SEMPRE em português brasileiro\n2. Seja conciso, mas completo — evite respostas genéricas\n3. Se não souber a resposta, diga que vai encaminhar para o suporte humano\n4. Nunca invente funcionalidades que não existam\n5. Use **negrito** para destacar nomes de botões, menus ou ações importantes\n6. Se o usuário pedir algo que envolve ação técnica (ex: alterar dados via API), oriente-o sem executar\n7. Considere o role do usuário para adaptar a resposta (ADMIN tem acesso total, FUNCIONARIO tem acesso limitado)\n8. Não repita informações do histórico — seja contextual\n9. Quando for descrever funcionalidades de um modulo, crie uma lista de passo a passo.\n10. Sempre formate as mensagens com a formatação de texto do WhatsApp.\n\n## IMPORTANTE — Imagens da base de conhecimento:\nVocê PODE e DEVE enviar imagens ao usuário! O chat do cliente suporta imagens via markdown.\nQuando a base de conhecimento retornar conteúdo com imagens no formato `![descricao](url)`, você DEVE incluir essas imagens na sua resposta exatamente no mesmo formato markdown.\n- NUNCA diga que não pode enviar imagens — você pode!\n- SEMPRE inclua a imagem quando ela for relevante para a resposta\n- Mantenha o formato exato: `![Descrição da imagem](URL_completa_da_imagem)`\n- Coloque a imagem após a explicação textual relacionada\n- Exemplo: se a base retornar `![Tela de Login](https://api-dev.bellory.com.br/uploads/admin/suporte/bellory/tela_de_login.png)`, inclua exatamente isso na resposta"
         }
       },
-      "id": "fed8ee19-0062-4489-88c3-5f4bc421ce23",
+      "id": "8891a889-d7d2-4e4f-a04c-4b29fa899c77",
       "name": "Agente IA Suporte",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [1120, -120]
+      "position": [
+        -1040,
+        384
+      ]
     },
     {
       "parameters": {
@@ -176,11 +230,14 @@
         "sessionKey": "sessionId",
         "contextWindowLength": 20
       },
-      "id": "2e3c80e1-5c11-4841-accc-3bfbda6e79b8",
+      "id": "e643d2b1-1c57-4da7-962c-bc472d679b77",
       "name": "Memória da Conversa",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
-      "position": [1080, 100]
+      "position": [
+        -1072,
+        608
+      ]
     },
     {
       "parameters": {
@@ -188,22 +245,28 @@
         "description": "Busca informações na base de conhecimento técnico do CRM e da telefonia. SEMPRE use esta ferramenta ANTES de responder qualquer pergunta técnica. Ela consulta manuais, documentações, troubleshooting e FAQs. Envie como input a pergunta ou o problema técnico descrito pelo cliente, reformulado de forma clara.\nResponda somente com base nas informações encontradas na base de conhecimento, se não encontrar retornar uma mensagem de conteúdo não localizado.",
         "topK": 5
       },
-      "id": "a8f32d8b-d7c6-4b79-bbae-146fcc1c61ef",
+      "id": "cbfb23ea-8fa5-4e7f-a57f-a0f4c0a49732",
       "name": "Tool RAG KB",
       "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
       "typeVersion": 1,
-      "position": [1240, 100]
+      "position": [
+        -912,
+        608
+      ]
     },
     {
       "parameters": {
         "tableName": "document_chunks",
         "options": {}
       },
-      "id": "9d91bc3b-8c50-43a4-8a2b-85c7899ba4b7",
+      "id": "16bbdc6c-2239-4176-924a-dc7a95beba36",
       "name": "PGVector Retrieve",
       "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
       "typeVersion": 1,
-      "position": [1200, 320],
+      "position": [
+        -992,
+        816
+      ],
       "credentials": {
         "postgres": {
           "id": "lPGdtsBbIuYx6qzc",
@@ -215,11 +278,14 @@
       "parameters": {
         "modelName": "models/gemini-embedding-001"
       },
-      "id": "c1ece256-e3ae-4996-b3e2-acf237892d0e",
+      "id": "4afba08e-8885-4f41-b10d-c22750cfe7fc",
       "name": "Embeddings Retrieve",
       "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
       "typeVersion": 1,
-      "position": [1200, 500],
+      "position": [
+        -992,
+        1008
+      ],
       "credentials": {
         "googlePalmApi": {
           "id": "qyQQ5ZNt8xIXySJ4",
@@ -233,8 +299,11 @@
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
-      "position": [1400, 320],
-      "id": "f906f09b-1833-4820-8c62-2e1cbdbd1e51",
+      "position": [
+        -688,
+        816
+      ],
+      "id": "6cef6840-b8b4-4d47-8181-e1b05f45a363",
       "name": "Google Gemini Chat Model",
       "credentials": {
         "googlePalmApi": {
@@ -251,31 +320,40 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 1,
-      "position": [1400, 100],
-      "id": "0330104d-22e6-4995-a9f5-ca1fc5c4d64d",
+      "position": [
+        -736,
+        160
+      ],
+      "id": "528a4520-427c-4ac0-8e82-4b1e4f84ffbc",
       "name": "Tool: Consultar Dashboard"
     },
     {
       "parameters": {
-        "jsCode": "const output = $input.first().json;\nconst respostaIA = output.output || output.text || output.response || 'Desculpe, não consegui gerar uma resposta.';\nconst sessionId = $('Criar ou Reutilizar Sessao').first().json.sessionId;\nlet tentativas_falhas = $('Criar ou Reutilizar Sessao').first().json.tentativas_falhas || 0;\n\n// Palavras-chave que indicam que a IA não conseguiu resolver\nconst keywordsFalha = [\n  'não consegui',\n  'não sei',\n  'não encontrei',\n  'encaminhar para o suporte',\n  'suporte humano',\n  'não tenho informação',\n  'conteúdo não localizado',\n  'não possuo informações',\n  'não tenho como ajudar'\n];\n\nconst falhou = keywordsFalha.some(kw => respostaIA.toLowerCase().includes(kw));\nif (falhou) tentativas_falhas += 1;\n\nconst transferido = tentativas_falhas >= 3;\n\nreturn [{\n  json: {\n    respostaIA,\n    sessionId,\n    tentativas_falhas,\n    transferido,\n    falhou\n  }\n}];"
+        "jsCode": "const output = $input.first().json;\nconst respostaIA = output.output || output.text || output.response || 'Desculpe, não consegui gerar uma resposta.';\nconst sessionId = $('Criar ou Reutilizar Sessao').first().json.sessionId;\nconst mensagemCliente = $('Processar Dados').first().json.mensagem || '';\nlet tentativas_falhas = $('Criar ou Reutilizar Sessao').first().json.tentativas_falhas || 0;\n\n// 1. Verifica se o CLIENTE pediu transferência diretamente\nconst keywordsClientePedeTransferencia = [\n  'quero ser transferido',\n  'quero falar com humano',\n  'quero falar com uma pessoa',\n  'quero falar com atendente',\n  'transferir para humano',\n  'transferir para atendente',\n  'falar com suporte',\n  'falar com alguém',\n  'falar com alguem',\n  'atendente humano',\n  'pessoa real',\n  'quero um humano',\n  'preciso de um humano',\n  'me transfere',\n  'me transfira',\n  'transferência',\n  'transferencia'\n];\n\nconst clientePediuTransferencia = keywordsClientePedeTransferencia.some(\n  kw => mensagemCliente.toLowerCase().includes(kw)\n);\n\n// 2. Verifica se a IA está indicando que vai transferir\nconst keywordsIATransfere = [\n  'encaminhando sua solicitação',\n  'encaminhando para',\n  'transferindo para',\n  'vou transferir',\n  'será transferido',\n  'especialista de suporte',\n  'atendente humano irá',\n  'vou encaminhar'\n];\n\nconst iaIndicouTransferencia = keywordsIATransfere.some(\n  kw => respostaIA.toLowerCase().includes(kw)\n);\n\n// 3. Transferência imediata se o cliente pediu ou a IA indicou\nconst transferenciaImediata = clientePediuTransferencia || iaIndicouTransferencia;\n\n// 4. Verifica se a IA falhou (não conseguiu resolver)\nconst keywordsFalha = [\n  'não consegui',\n  'não sei',\n  'não encontrei',\n  'encaminhar para o suporte',\n  'suporte humano',\n  'não tenho informação',\n  'conteúdo não localizado',\n  'não possuo informações',\n  'não tenho como ajudar'\n];\n\nconst falhou = keywordsFalha.some(kw => respostaIA.toLowerCase().includes(kw));\nif (falhou) tentativas_falhas += 1;\n\n// Transfere: imediatamente se pediu, ou após 3 falhas\nconst transferido = transferenciaImediata || tentativas_falhas >= 3;\n\nreturn [{\n  json: {\n    respostaIA,\n    sessionId,\n    tentativas_falhas,\n    transferido,\n    falhou,\n    transferenciaImediata\n  }\n}];"
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000009",
+      "id": "89bc9e72-a60b-4d30-9dce-23f2db13908c",
       "name": "Avaliar Resposta IA",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1500, -120]
+      "position": [
+        -656,
+        384
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO public.mensagens (sessao_id, autor, conteudo, criado_em)\nVALUES ('{{ $json.sessionId }}', 'agente', '{{ $json.respostaIA.replace(/'/g, \"''\") }}', NOW());\n\nUPDATE public.sessoes SET\n  tentativas_falhas = {{ $json.tentativas_falhas }},\n  status = CASE WHEN {{ $json.transferido }} THEN 'transferido' ELSE status END,\n  modo = CASE WHEN {{ $json.transferido }} THEN 'humano' ELSE modo END,\n  motivo_transferencia = CASE WHEN {{ $json.transferido }} THEN 'IA não conseguiu resolver após 3 tentativas' ELSE motivo_transferencia END,\n  atualizado_em = NOW(),\n  ultima_mensagem_em = NOW()\nWHERE id = '{{ $json.sessionId }}'",
+        "query": "INSERT INTO public.mensagens (sessao_id, autor, conteudo, criado_em)\nVALUES ('{{ $json.sessionId }}', 'agente', '{{ $json.respostaIA.replace(/'/g, \"''\") }}', NOW())RETURNING id;\n\nUPDATE public.sessoes SET\n  tentativas_falhas = {{ $json.tentativas_falhas }},\n  status = CASE WHEN {{ $json.transferido }} THEN 'transferido' ELSE status END,\n  modo = CASE WHEN {{ $json.transferido }} THEN 'humano' ELSE modo END,\n  motivo_transferencia = CASE WHEN {{ $json.transferido }} THEN '{{ $json.transferenciaImediata ? \"Cliente solicitou transferência\" : \"IA não conseguiu resolver após 3 tentativas\" }}' ELSE motivo_transferencia END,\n  atualizado_em = NOW(),\n  ultima_mensagem_em = NOW()\nWHERE id = '{{ $json.sessionId }}'",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000010",
+      "id": "fb786772-7825-4ba6-aa66-d90feef4fd1c",
       "name": "Salvar Resposta e Atualizar",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [1740, -120],
+      "position": [
+        -416,
+        384
+      ],
       "credentials": {
         "postgres": {
           "id": "lPGdtsBbIuYx6qzc",
@@ -290,35 +368,56 @@
           "values": [
             {
               "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
-                "conditions": [{ "leftValue": "={{ $('Avaliar Resposta IA').item.json.transferido }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Avaliar Resposta IA').item.json.transferido }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    },
+                    "id": "55a267b8-ef19-47ba-bbd0-61618a3caa2f"
+                  }
+                ],
                 "combinator": "and"
-              },
-              "renameOutput": "Transferir"
+              }
             }
           ]
         },
+        "looseTypeValidation": true,
         "options": {
           "fallbackOutput": "extra"
         }
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000011",
+      "id": "1c2c3279-c263-4963-88ea-69fc35c049ca",
       "name": "Verificar Transferencia",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [1980, -120]
+      "position": [
+        -176,
+        384
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO public.transferencias (sessao_id, email_destino, motivo, criado_em)\nVALUES ('{{ $('Avaliar Resposta IA').item.json.sessionId }}', 'guilhermeoliveira1998@gmail.com', 'IA não conseguiu resolver após 3 tentativas', NOW());\n\nINSERT INTO public.mensagens (sessao_id, autor, conteudo, criado_em)\nVALUES ('{{ $('Avaliar Resposta IA').item.json.sessionId }}', 'sistema', 'Atendimento transferido para um atendente humano.', NOW());",
+        "query": "INSERT INTO public.transferencias (sessao_id, email_destino, motivo, criado_em)\nVALUES (\n  '{{ $('Avaliar Resposta IA').item.json.sessionId }}',\n  'guilhermeoliveira1998@gmail.com',\n  '{{ $('Avaliar Resposta IA').item.json.transferenciaImediata ? \"Cliente solicitou transferência para atendente humano\" : \"IA não conseguiu resolver após 3 tentativas\" }}',\n  NOW()\n);\n\nINSERT INTO public.mensagens (sessao_id, autor, conteudo, criado_em)\nVALUES ('{{ $('Avaliar Resposta IA').item.json.sessionId }}', 'sistema', 'Atendimento transferido para um atendente humano.', NOW());",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000012",
+      "id": "e83e8a32-87c3-46bb-9ab5-0df26d14443b",
       "name": "Registrar Transferencia",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [2220, -300],
+      "position": [
+        80,
+        176
+      ],
       "credentials": {
         "postgres": {
           "id": "lPGdtsBbIuYx6qzc",
@@ -330,42 +429,60 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ resposta: $('Avaliar Resposta IA').item.json.respostaIA + '\\n\\nSeu atendimento foi transferido para um atendente humano. Aguarde.', sessionId: $('Avaliar Resposta IA').item.json.sessionId, modo: 'humano', transferido: true }) }}",
+        "responseBody": "={{ JSON.stringify({ resposta: $('Avaliar Resposta IA').item.json.respostaIA + '\\n\\nSeu atendimento foi transferido para um atendente humano. Aguarde.', sessionId: $('Avaliar Resposta IA').item.json.sessionId, modo: 'humano', transferido: true, criado_em: new Date().toISOString() }) }}",
         "options": {
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000015",
+      "id": "f68a5ba4-7361-4532-9239-046f0cea61ef",
       "name": "Responder Transferido",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [2460, -300]
+      "position": [
+        816,
+        176
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ resposta: $('Avaliar Resposta IA').item.json.respostaIA, sessionId: $('Avaliar Resposta IA').item.json.sessionId, modo: 'ia', transferido: false }) }}",
+        "responseBody": "={{ JSON.stringify({ resposta: $('Avaliar Resposta IA').item.json.respostaIA, sessionId: $('Avaliar Resposta IA').item.json.sessionId, modo: 'ia', transferido: false, mensagemId: $json.id }) }}",
         "options": {
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000016",
+      "id": "a6cd8fd7-d892-4d62-9725-01062171de4e",
       "name": "Responder IA OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [2220, 60]
+      "position": [
+        80,
+        560
+      ]
     },
     {
       "parameters": {
@@ -375,17 +492,26 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "a1b2c3d4-1111-4aaa-b111-000000000018",
+      "id": "83dc1d0e-4c3e-4e2c-81d9-1592455202cc",
       "name": "Responder Humano OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [880, 180]
+      "position": [
+        -1280,
+        -176
+      ]
     },
     {
       "parameters": {
@@ -395,97 +521,333 @@
           "responseCode": 500,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "eedea410-c9c3-4c30-88d5-bb90d8874993",
+      "id": "a9115487-0fc3-49c3-b9f4-a7fd83850f95",
       "name": "Responder Erro",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1500, -400]
+      "position": [
+        -640,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const sessao = $('Avaliar Resposta IA').first().json;\nconst dados = $('Processar Dados').first().json;\nconst usuario = dados.usuario || {};\nconst organizacao = dados.organizacao || {};\nconst modulo = dados.modulo || {};\nconst historico = dados.historicoFormatado || 'Sem histórico disponível';\n\nconst emailHtml = `\n<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;\">\n  <div style=\"background: linear-gradient(135deg, #db6f57, #8b3d35); padding: 20px; border-radius: 12px 12px 0 0; text-align: center;\">\n    <h1 style=\"color: white; margin: 0; font-size: 20px;\">Transferência de Atendimento</h1>\n    <p style=\"color: rgba(255,255,255,0.8); margin: 5px 0 0; font-size: 14px;\">Suporte Bellory - Agente IA</p>\n  </div>\n  \n  <div style=\"background: #fff; border: 1px solid #e5e0db; border-top: none; padding: 24px; border-radius: 0 0 12px 12px;\">\n    <p style=\"color: #2a2420; font-size: 14px; margin-top: 0;\">O agente IA não conseguiu resolver o atendimento após <strong>3 tentativas</strong> e transferiu para atendimento humano.</p>\n    \n    <table style=\"width: 100%; border-collapse: collapse; margin: 16px 0;\">\n      <tr style=\"border-bottom: 1px solid #f0ebe6;\">\n        <td style=\"padding: 8px 0; color: #6b5d57; font-size: 13px; width: 140px;\">Session ID</td>\n        <td style=\"padding: 8px 0; color: #2a2420; font-size: 13px; font-family: monospace;\">${sessao.sessionId}</td>\n      </tr>\n      <tr style=\"border-bottom: 1px solid #f0ebe6;\">\n        <td style=\"padding: 8px 0; color: #6b5d57; font-size: 13px;\">Cliente</td>\n        <td style=\"padding: 8px 0; color: #2a2420; font-size: 13px;\">${usuario.nome || 'N/A'} (${usuario.email || 'N/A'})</td>\n      </tr>\n      <tr style=\"border-bottom: 1px solid #f0ebe6;\">\n        <td style=\"padding: 8px 0; color: #6b5d57; font-size: 13px;\">Organização</td>\n        <td style=\"padding: 8px 0; color: #2a2420; font-size: 13px;\">${organizacao.nome || 'N/A'} (Tenant: ${organizacao.tenantId || 'N/A'})</td>\n      </tr>\n      <tr style=\"border-bottom: 1px solid #f0ebe6;\">\n        <td style=\"padding: 8px 0; color: #6b5d57; font-size: 13px;\">Módulo</td>\n        <td style=\"padding: 8px 0; color: #2a2420; font-size: 13px;\">${modulo.nome || 'N/A'} - ${modulo.descricao || ''}</td>\n      </tr>\n      <tr style=\"border-bottom: 1px solid #f0ebe6;\">\n        <td style=\"padding: 8px 0; color: #6b5d57; font-size: 13px;\">Última mensagem</td>\n        <td style=\"padding: 8px 0; color: #2a2420; font-size: 13px;\">${dados.mensagem || 'N/A'}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 0; color: #6b5d57; font-size: 13px;\">Tentativas IA</td>\n        <td style=\"padding: 8px 0; color: #2a2420; font-size: 13px;\">${sessao.tentativas_falhas} falhas</td>\n      </tr>\n    </table>\n    \n    <div style=\"background: #faf8f6; border: 1px solid #f0ebe6; border-radius: 8px; padding: 16px; margin-top: 16px;\">\n      <h3 style=\"color: #2a2420; font-size: 13px; margin: 0 0 8px;\">Histórico da Conversa</h3>\n      <pre style=\"color: #6b5d57; font-size: 12px; white-space: pre-wrap; word-break: break-word; margin: 0; font-family: Arial, sans-serif; line-height: 1.5;\">${historico}</pre>\n    </div>\n    \n    <div style=\"margin-top: 20px; text-align: center;\">\n      <a href=\"https://admin.bellory.com.br/admin/agente-ia\" style=\"display: inline-block; background: #db6f57; color: white; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold;\">Abrir Painel de Atendimentos</a>\n    </div>\n    \n    <p style=\"color: #b8aea4; font-size: 11px; text-align: center; margin: 20px 0 0;\">Este e-mail foi gerado automaticamente pelo sistema de suporte Bellory.</p>\n  </div>\n</div>\n`;\n\nreturn [{\n  json: {\n    emailHtml,\n    assunto: `[Suporte Bellory] Transferência - ${usuario.nome || 'Cliente'} - ${modulo.nome || 'Sistema'}`,\n    emailDestino: 'guilhermeoliveira1998@gmail.com'\n  }\n}];"
+      },
+      "id": "85bf70b7-374c-4ee2-ad3d-fa5ff290a1e5",
+      "name": "Preparar Email Transferencia",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "app.bellory@gmail.com",
+        "toEmail": "guilhermeoliveira1998@gmail.com",
+        "subject": "={{ $json.assunto }}",
+        "html": "={{ $json.emailHtml }}",
+        "options": {}
+      },
+      "id": "b1381409-97dd-4ca8-af82-f1f38676fcb2",
+      "name": "Enviar Email Transferencia",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        576,
+        176
+      ],
+      "webhookId": "01683771-9f64-459d-8521-0f325a39124d",
+      "credentials": {
+        "smtp": {
+          "id": "zSLeVuH3TtnEcwaU",
+          "name": "SMTP account"
+        }
+      }
     }
   ],
   "pinData": {},
   "connections": {
     "Webhook Entrada": {
-      "main": [[{ "node": "Processar Dados", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Processar Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Processar Dados": {
-      "main": [[{ "node": "Buscar Sessao", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Buscar Sessao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Buscar Sessao": {
-      "main": [[{ "node": "Criar ou Reutilizar Sessao", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Criar ou Reutilizar Sessao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Criar ou Reutilizar Sessao": {
-      "main": [[{ "node": "Upsert Sessao", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Upsert Sessao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Upsert Sessao": {
-      "main": [[{ "node": "Salvar Msg Cliente", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Salvar Msg Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Salvar Msg Cliente": {
-      "main": [[{ "node": "Modo do Atendimento", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Modo do Atendimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Modo do Atendimento": {
       "main": [
-        [{ "node": "Preparar para IA", "type": "main", "index": 0 }],
-        [{ "node": "Responder Humano OK", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Preparar para IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder Humano OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Preparar para IA": {
-      "main": [[{ "node": "Agente IA Suporte", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Agente IA Suporte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Gemini Model": {
-      "ai_languageModel": [[{ "node": "Agente IA Suporte", "type": "ai_languageModel", "index": 0 }]]
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente IA Suporte",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Memória da Conversa": {
-      "ai_memory": [[{ "node": "Agente IA Suporte", "type": "ai_memory", "index": 0 }]]
+      "ai_memory": [
+        [
+          {
+            "node": "Agente IA Suporte",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Tool RAG KB": {
-      "ai_tool": [[{ "node": "Agente IA Suporte", "type": "ai_tool", "index": 0 }]]
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA Suporte",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Tool: Consultar Dashboard": {
-      "ai_tool": [[{ "node": "Agente IA Suporte", "type": "ai_tool", "index": 1 }]]
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA Suporte",
+            "type": "ai_tool",
+            "index": 1
+          }
+        ]
+      ]
     },
     "PGVector Retrieve": {
-      "ai_vectorStore": [[{ "node": "Tool RAG KB", "type": "ai_vectorStore", "index": 0 }]]
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Tool RAG KB",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Embeddings Retrieve": {
-      "ai_embedding": [[{ "node": "PGVector Retrieve", "type": "ai_embedding", "index": 0 }]]
+      "ai_embedding": [
+        [
+          {
+            "node": "PGVector Retrieve",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Google Gemini Chat Model": {
-      "ai_languageModel": [[{ "node": "Tool RAG KB", "type": "ai_languageModel", "index": 0 }]]
+      "ai_languageModel": [
+        [
+          {
+            "node": "Tool RAG KB",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Agente IA Suporte": {
-      "main": [[{ "node": "Avaliar Resposta IA", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Avaliar Resposta IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Avaliar Resposta IA": {
-      "main": [[{ "node": "Salvar Resposta e Atualizar", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Salvar Resposta e Atualizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Salvar Resposta e Atualizar": {
-      "main": [[{ "node": "Verificar Transferencia", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Verificar Transferencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Verificar Transferencia": {
       "main": [
-        [{ "node": "Registrar Transferencia", "type": "main", "index": 0 }],
-        [{ "node": "Responder IA OK", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Registrar Transferencia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder IA OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Registrar Transferencia": {
-      "main": [[{ "node": "Responder Transferido", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Preparar Email Transferencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Email Transferencia": {
+      "main": [
+        [
+          {
+            "node": "Enviar Email Transferencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Email Transferencia": {
+      "main": [
+        [
+          {
+            "node": "Responder Transferido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "merged-v1-2026-03-22",
+  "versionId": "563c5807-0012-4a04-a46e-6d4cc0792b62",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "7cd2192570f690f192d4d8c0d58a905ea183da6f294052109cd14343322150c9"
   },
-  "id": "suporte-principal-merged",
+  "id": "yNoSsCVVhnGJHIOT",
   "tags": []
 }

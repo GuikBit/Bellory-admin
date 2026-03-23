@@ -3,16 +3,20 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "GET",
         "path": "suporte_atendimentos",
         "responseMode": "responseNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
-      "id": "b0000001-0001-4000-b001-000000000001",
+      "id": "538c7c8d-7ebb-469a-8c8e-ea8151996ced",
       "name": "Webhook Atendimentos",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-600, -1200],
+      "position": [
+        -608,
+        -3616
+      ],
       "webhookId": "suporte_atendimentos"
     },
     {
@@ -21,24 +25,33 @@
         "query": "SELECT s.*, (SELECT COUNT(*) FROM public.mensagens WHERE sessao_id = s.id) as total_mensagens FROM public.sessoes s ORDER BY s.criado_em DESC",
         "options": {}
       },
-      "id": "b0000001-0001-4000-b001-000000000002",
+      "id": "dcf556bd-cc39-4d6c-b7a8-6fd136182cff",
       "name": "Buscar Atendimentos",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-340, -1200],
+      "position": [
+        -336,
+        -3616
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
       "parameters": {
         "jsCode": "const sessoes = $input.all().map(i => i.json);\nconst total = sessoes.length;\n\nconst counts = { ativo: 0, transferido: 0, resolvido: 0, expirado: 0 };\nsessoes.forEach(s => {\n  if (counts[s.status] !== undefined) counts[s.status]++;\n});\n\nreturn [{ json: { sessoes, total, counts } }];"
       },
-      "id": "b0000001-0001-4000-b001-000000000003",
+      "id": "889c4b4f-e86d-49b9-aac1-4bcc6b4fece0",
       "name": "Agregar Atendimentos",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-80, -1200]
+      "position": [
+        -80,
+        -3616
+      ]
     },
     {
       "parameters": {
@@ -48,31 +61,43 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "b0000001-0001-4000-b001-000000000004",
+      "id": "e90e28f0-33bb-436f-a5c7-7c648066edba",
       "name": "Responder Atendimentos",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [160, -1200]
+      "position": [
+        176,
+        -3616
+      ]
     },
-
     {
       "parameters": {
-        "httpMethod": "GET",
         "path": "suporte_atendimento_detalhe",
         "responseMode": "responseNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
-      "id": "b0000002-0001-4000-b001-000000000001",
+      "id": "22a201e3-6b60-4880-a4d2-99cfda0c664e",
       "name": "Webhook Detalhe",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-600, -900],
+      "position": [
+        -608,
+        -3312
+      ],
       "webhookId": "suporte_atendimento_detalhe"
     },
     {
@@ -81,24 +106,33 @@
         "query": "SELECT * FROM public.sessoes WHERE id = '{{ $json.query.sessionId }}'",
         "options": {}
       },
-      "id": "b0000002-0001-4000-b001-000000000002",
+      "id": "3d1e4160-fb1d-42e5-95c6-67c716a2edb7",
       "name": "Buscar Sessao Detalhe",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-340, -900],
+      "position": [
+        -336,
+        -3312
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
       "parameters": {
         "jsCode": "const sessao = $input.first().json;\nconst sessionId = sessao.id;\n\n// Salva a sessão para uso posterior\nreturn [{ json: { sessao, sessionId } }];"
       },
-      "id": "b0000002-0001-4000-b001-000000000003",
+      "id": "44aba16d-e70f-4561-8812-f0b7534d4a63",
       "name": "Extrair Sessao Detalhe",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-80, -900]
+      "position": [
+        -80,
+        -3312
+      ]
     },
     {
       "parameters": {
@@ -106,24 +140,33 @@
         "query": "SELECT * FROM public.mensagens WHERE sessao_id = '{{ $json.sessionId }}' ORDER BY criado_em ASC",
         "options": {}
       },
-      "id": "b0000002-0001-4000-b001-000000000004",
+      "id": "21fe303c-880f-4d5f-9f88-f02bbeb04663",
       "name": "Buscar Mensagens Detalhe",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [160, -900],
+      "position": [
+        176,
+        -3312
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
       "parameters": {
         "jsCode": "const mensagens = $input.all().map(i => i.json);\nconst sessao = $('Extrair Sessao Detalhe').first().json.sessao;\n\nreturn [{ json: { sessao, mensagens } }];"
       },
-      "id": "b0000002-0001-4000-b001-000000000005",
+      "id": "38f5df85-1b2c-4168-8f53-88e739890f19",
       "name": "Montar Detalhe",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [400, -900]
+      "position": [
+        416,
+        -3312
+      ]
     },
     {
       "parameters": {
@@ -133,46 +176,65 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "b0000002-0001-4000-b001-000000000006",
+      "id": "6e0541d6-4af5-4ca0-8ab1-f20d1d4e3056",
       "name": "Responder Detalhe",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [640, -900]
+      "position": [
+        656,
+        -3312
+      ]
     },
-
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "suporte_resposta_humana",
         "responseMode": "responseNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
-      "id": "b0000003-0001-4000-b001-000000000001",
+      "id": "d36d4d82-5341-4787-8fc5-67c3fa2a925b",
       "name": "Webhook Resposta Humana",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-600, -600],
+      "position": [
+        -608,
+        -3008
+      ],
       "webhookId": "suporte_resposta_humana"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO public.mensagens (sessao_id, autor, conteudo, criado_em)\nVALUES ('{{ $json.body.sessionId }}', 'humano', '{{ $json.body.mensagem }}', NOW())",
+        "query": "INSERT INTO public.mensagens (sessao_id, autor, conteudo, atendente_nome, criado_em)\nVALUES ('{{ $json.body.sessionId }}', 'humano', '{{ $json.body.mensagem }}', '{{ $json.body.atendente }}', NOW())",
         "options": {}
       },
-      "id": "b0000003-0001-4000-b001-000000000002",
+      "id": "01fe94f6-ef8f-46c4-8c39-2eeb6e114942",
       "name": "Salvar Resposta Humana",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-340, -600],
+      "position": [
+        -336,
+        -3008
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
@@ -181,13 +243,19 @@
         "query": "UPDATE public.sessoes SET ultima_mensagem_em = NOW(), atendente_humano = '{{ $('Webhook Resposta Humana').item.json.body.atendente }}', atualizado_em = NOW() WHERE id = '{{ $('Webhook Resposta Humana').item.json.body.sessionId }}'",
         "options": {}
       },
-      "id": "b0000003-0001-4000-b001-000000000003",
+      "id": "4858ace7-ee23-4a8a-8bf3-d7d12e868cfc",
       "name": "Atualizar Sessao Humana",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-80, -600],
+      "position": [
+        -80,
+        -3008
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
@@ -198,31 +266,44 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "b0000003-0001-4000-b001-000000000004",
+      "id": "7c44901c-1163-48cb-8b6c-b87ea59feba5",
       "name": "Responder Resposta Humana",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [160, -600]
+      "position": [
+        176,
+        -3008
+      ]
     },
-
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "suporte_resolver_atendimento",
         "responseMode": "responseNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
-      "id": "b0000004-0001-4000-b001-000000000001",
+      "id": "0c4e592d-f680-4634-b24c-029aa56e00c2",
       "name": "Webhook Resolver",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-600, -300],
+      "position": [
+        -608,
+        -2704
+      ],
       "webhookId": "suporte_resolver_atendimento"
     },
     {
@@ -231,13 +312,19 @@
         "query": "UPDATE public.sessoes SET status = 'resolvido', modo = 'ia', encerrado_em = NOW(), atualizado_em = NOW() WHERE id = '{{ $json.body.sessionId }}'",
         "options": {}
       },
-      "id": "b0000004-0001-4000-b001-000000000002",
+      "id": "a92aeb86-4e8a-4f1b-8279-88e3c86ed36e",
       "name": "Resolver Sessao",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-340, -300],
+      "position": [
+        -336,
+        -2704
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
@@ -246,13 +333,19 @@
         "query": "INSERT INTO public.mensagens (sessao_id, autor, conteudo, criado_em)\nVALUES ('{{ $('Webhook Resolver').item.json.body.sessionId }}', 'sistema', 'Atendimento marcado como resolvido.', NOW())",
         "options": {}
       },
-      "id": "b0000004-0001-4000-b001-000000000003",
+      "id": "2d3281c0-360d-49a8-9935-fa7ac4fe7720",
       "name": "Mensagem Resolucao",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-80, -300],
+      "position": [
+        -80,
+        -2704
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
@@ -263,57 +356,78 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "b0000004-0001-4000-b001-000000000004",
+      "id": "9432943f-3dd4-480e-9a6e-d0a19325dd58",
       "name": "Responder Resolver",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [160, -300]
+      "position": [
+        176,
+        -2704
+      ]
     },
-
     {
       "parameters": {
-        "httpMethod": "GET",
         "path": "suporte_poll_admin",
         "responseMode": "responseNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
-      "id": "b0000005-0001-4000-b001-000000000001",
+      "id": "c3b90df7-e41b-4e90-bcfd-fd0e01b8c46c",
       "name": "Webhook Poll Admin",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-600, 0],
+      "position": [
+        -608,
+        -2416
+      ],
       "webhookId": "suporte_poll_admin"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT * FROM public.mensagens WHERE sessao_id = '{{ $json.query.sessionId }}' AND criado_em > '{{ $json.query.after }}' AND autor = 'cliente' ORDER BY criado_em ASC",
+        "query": "SELECT * FROM public.mensagens WHERE sessao_id = '{{ $json.query.sessionId }}' AND criado_em > '{{ $json.query.after || '1970-01-01T00:00:00Z' }}'::timestamptz AND autor = 'cliente' ORDER BY criado_em ASC",
         "options": {}
       },
-      "id": "b0000005-0001-4000-b001-000000000002",
+      "id": "4c37dbca-8325-4beb-abdb-8a881aa5959d",
       "name": "Poll Mensagens Admin",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-340, 0],
+      "position": [
+        -336,
+        -2416
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
       "parameters": {
         "jsCode": "const mensagens = $input.all().map(i => i.json);\nconst query = $('Webhook Poll Admin').first().json.query;\n\nreturn [{ json: { mensagens, sessionId: query.sessionId } }];"
       },
-      "id": "b0000005-0001-4000-b001-000000000003",
+      "id": "850af6cc-9d64-4a0b-9c43-318b6dd2093a",
       "name": "Preparar Poll Admin",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-80, 0]
+      "position": [
+        -80,
+        -2416
+      ]
     },
     {
       "parameters": {
@@ -321,24 +435,33 @@
         "query": "SELECT status, modo FROM public.sessoes WHERE id = '{{ $json.sessionId }}'",
         "options": {}
       },
-      "id": "b0000005-0001-4000-b001-000000000004",
+      "id": "61ce1156-9db8-4f73-b1d8-f03f21f10385",
       "name": "Status Sessao Admin",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [160, 0],
+      "position": [
+        176,
+        -2416
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
       "parameters": {
         "jsCode": "const sessaoInfo = $input.first().json;\nconst mensagens = $('Preparar Poll Admin').first().json.mensagens;\n\nreturn [{ json: { mensagens, modo: sessaoInfo.modo, status: sessaoInfo.status } }];"
       },
-      "id": "b0000005-0001-4000-b001-000000000005",
+      "id": "1932ce88-febb-4589-be28-4c1b1160da57",
       "name": "Montar Poll Admin",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [400, 0]
+      "position": [
+        416,
+        -2416
+      ]
     },
     {
       "parameters": {
@@ -348,57 +471,78 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "b0000005-0001-4000-b001-000000000006",
+      "id": "4c9fa89e-e926-463b-a039-c953f6ce462e",
       "name": "Responder Poll Admin",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [640, 0]
+      "position": [
+        656,
+        -2416
+      ]
     },
-
     {
       "parameters": {
-        "httpMethod": "GET",
         "path": "suporte_mensagens_poll",
         "responseMode": "responseNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
-      "id": "b0000006-0001-4000-b001-000000000001",
+      "id": "7888836d-b6f5-45c5-a628-174fdf9bf94e",
       "name": "Webhook Poll Cliente",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-600, 300],
+      "position": [
+        -608,
+        -2112
+      ],
       "webhookId": "suporte_mensagens_poll"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT * FROM public.mensagens WHERE sessao_id = '{{ $json.query.sessionId }}' AND criado_em > '{{ $json.query.after }}' AND autor IN ('humano', 'sistema', 'agente') ORDER BY criado_em ASC",
+        "query": "SELECT * FROM public.mensagens WHERE sessao_id = '{{ $json.query.sessionId }}' AND criado_em > '{{ $json.query.after || '1970-01-01T00:00:00Z' }}'::timestamptz AND autor IN ('humano', 'sistema', 'agente') ORDER BY criado_em ASC",
         "options": {}
       },
-      "id": "b0000006-0001-4000-b001-000000000002",
+      "id": "267f1349-9b5d-4fe5-9a29-ae54556b596c",
       "name": "Poll Mensagens Cliente",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-340, 300],
+      "position": [
+        -336,
+        -2112
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
       "parameters": {
         "jsCode": "const mensagens = $input.all().map(i => i.json);\nconst query = $('Webhook Poll Cliente').first().json.query;\n\nreturn [{ json: { mensagens, sessionId: query.sessionId } }];"
       },
-      "id": "b0000006-0001-4000-b001-000000000003",
+      "id": "b06b520a-2784-4e9f-9bfb-264d815ff3ae",
       "name": "Preparar Poll Cliente",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-80, 300]
+      "position": [
+        -80,
+        -2112
+      ]
     },
     {
       "parameters": {
@@ -406,24 +550,33 @@
         "query": "SELECT status, modo FROM public.sessoes WHERE id = '{{ $json.sessionId }}'",
         "options": {}
       },
-      "id": "b0000006-0001-4000-b001-000000000004",
+      "id": "01081834-0fce-4742-a2a4-932c468e5f35",
       "name": "Status Sessao Cliente",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [160, 300],
+      "position": [
+        176,
+        -2112
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
       "parameters": {
         "jsCode": "const sessaoInfo = $input.first().json;\nconst mensagens = $('Preparar Poll Cliente').first().json.mensagens;\n\nreturn [{ json: { mensagens, modo: sessaoInfo.modo, status: sessaoInfo.status } }];"
       },
-      "id": "b0000006-0001-4000-b001-000000000005",
+      "id": "99522793-8a6e-4fb4-ad90-1304aac92a2c",
       "name": "Montar Poll Cliente",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [400, 300]
+      "position": [
+        416,
+        -2112
+      ]
     },
     {
       "parameters": {
@@ -433,31 +586,43 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "b0000006-0001-4000-b001-000000000006",
+      "id": "c1edce18-12a2-4c04-bc6d-557c82094b73",
       "name": "Responder Poll Cliente",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [640, 300]
+      "position": [
+        656,
+        -2112
+      ]
     },
-
     {
       "parameters": {
-        "httpMethod": "GET",
         "path": "suporte_documentos",
         "responseMode": "responseNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
-      "id": "b0000007-0001-4000-b001-000000000001",
+      "id": "cb38e0cb-f0a9-4329-bd98-22fb2078e460",
       "name": "Webhook Documentos",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-600, 600],
+      "position": [
+        -608,
+        -1808
+      ],
       "webhookId": "suporte_documentos"
     },
     {
@@ -466,24 +631,33 @@
         "query": "SELECT * FROM public.documentos_base ORDER BY criado_em DESC",
         "options": {}
       },
-      "id": "b0000007-0001-4000-b001-000000000002",
+      "id": "d6dfdc13-211f-4c44-94b4-877f6c72e346",
       "name": "Buscar Documentos",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-340, 600],
+      "position": [
+        -336,
+        -1808
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
       "parameters": {
         "jsCode": "const documentos = $input.all().map(i => i.json);\nreturn [{ json: { documentos } }];"
       },
-      "id": "b0000007-0001-4000-b001-000000000003",
+      "id": "6321fa93-e98b-4c99-ba2e-9319270ce20f",
       "name": "Formatar Documentos",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-80, 600]
+      "position": [
+        -80,
+        -1808
+      ]
     },
     {
       "parameters": {
@@ -493,31 +667,44 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "b0000007-0001-4000-b001-000000000004",
+      "id": "89f263f5-da4d-441d-a367-ea65892a4afe",
       "name": "Responder Documentos",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [160, 600]
+      "position": [
+        176,
+        -1808
+      ]
     },
-
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "suporte_registrar_documento",
         "responseMode": "responseNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
-      "id": "b0000008-0001-4000-b001-000000000001",
+      "id": "67f27c79-a6c6-4a9f-960a-f0f4351a26fb",
       "name": "Webhook Registrar Documento",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-600, 900],
+      "position": [
+        -608,
+        -1504
+      ],
       "webhookId": "suporte_registrar_documento"
     },
     {
@@ -526,13 +713,19 @@
         "query": "INSERT INTO public.documentos_base (filename, tipo, tamanho, categoria, status, criado_em, atualizado_em)\nVALUES ('{{ $json.body.filename }}', '{{ $json.body.tipo }}', '{{ $json.body.tamanho }}', '{{ $json.body.categoria || 'geral' }}', 'processando', NOW(), NOW())\nRETURNING id",
         "options": {}
       },
-      "id": "b0000008-0001-4000-b001-000000000002",
+      "id": "8258157b-edf0-4cd3-9088-111629f942be",
       "name": "Inserir Documento",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-340, 900],
+      "position": [
+        -336,
+        -1504
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
@@ -543,31 +736,44 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "b0000008-0001-4000-b001-000000000003",
+      "id": "f64f706c-441d-4a2b-9656-534d3e0bf4ac",
       "name": "Responder Registrar Documento",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [-80, 900]
+      "position": [
+        -80,
+        -1504
+      ]
     },
-
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "suporte_atualizar_documento",
         "responseMode": "responseNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
-      "id": "b0000009-0001-4000-b001-000000000001",
+      "id": "4dd9d4c2-369c-439d-8aae-8bb4a55e3244",
       "name": "Webhook Atualizar Documento",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-600, 1200],
+      "position": [
+        -608,
+        -1216
+      ],
       "webhookId": "suporte_atualizar_documento"
     },
     {
@@ -576,13 +782,19 @@
         "query": "UPDATE public.documentos_base SET status = '{{ $json.body.status }}', chunks = {{ $json.body.chunks }}, atualizado_em = NOW() WHERE filename = '{{ $json.body.filename }}'",
         "options": {}
       },
-      "id": "b0000009-0001-4000-b001-000000000002",
+      "id": "30b79519-7b40-4bb2-b82a-dfeae4382b76",
       "name": "Atualizar Documento",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-340, 1200],
+      "position": [
+        -336,
+        -1216
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
@@ -593,31 +805,44 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "b0000009-0001-4000-b001-000000000003",
+      "id": "5a3dcbbc-84da-4d2e-9a1e-ff81020a4c18",
       "name": "Responder Atualizar Documento",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [-80, 1200]
+      "position": [
+        -80,
+        -1216
+      ]
     },
-
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "suporte_excluir_documento",
         "responseMode": "responseNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
-      "id": "b0000010-0001-4000-b001-000000000001",
+      "id": "11224904-fa91-4e92-b936-aab4f545db2e",
       "name": "Webhook Excluir Documento",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-600, 1500],
+      "position": [
+        -608,
+        -912
+      ],
       "webhookId": "suporte_excluir_documento"
     },
     {
@@ -626,13 +851,19 @@
         "query": "DELETE FROM public.document_chunks WHERE metadata->>'filename' = '{{ $json.body.filename }}'",
         "options": {}
       },
-      "id": "b0000010-0001-4000-b001-000000000002",
+      "id": "17548943-468f-481b-905e-ec2407a3939a",
       "name": "Excluir Chunks",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-340, 1500],
+      "position": [
+        -336,
+        -912
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
@@ -641,13 +872,19 @@
         "query": "DELETE FROM public.documentos_base WHERE filename = '{{ $('Webhook Excluir Documento').item.json.body.filename }}'",
         "options": {}
       },
-      "id": "b0000010-0001-4000-b001-000000000003",
+      "id": "720f3cef-d271-4272-909b-1a47a3262a99",
       "name": "Excluir Documento Base",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-80, 1500],
+      "position": [
+        -80,
+        -912
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
@@ -658,46 +895,64 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "b0000010-0001-4000-b001-000000000004",
+      "id": "4936ebac-8376-47ef-b787-ed5af6deea53",
       "name": "Responder Excluir Documento",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [160, 1500]
+      "position": [
+        176,
+        -912
+      ]
     },
-
     {
       "parameters": {
-        "httpMethod": "GET",
         "path": "suporte_dashboard",
         "responseMode": "responseNode",
-        "options": { "allowedOrigins": "*" }
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
-      "id": "b0000011-0001-4000-b001-000000000001",
+      "id": "3b716311-401e-460b-9824-910ad50bb745",
       "name": "Webhook Dashboard",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-600, 1800],
+      "position": [
+        -608,
+        -608
+      ],
       "webhookId": "suporte_dashboard"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT\n  (SELECT COUNT(*) FROM public.sessoes) as total_sessoes,\n  (SELECT COUNT(*) FROM public.sessoes WHERE criado_em >= CURRENT_DATE) as sessoes_hoje,\n  (SELECT COUNT(*) FROM public.sessoes WHERE status = 'resolvido' AND modo != 'humano') as resolvidas_ia,\n  (SELECT COUNT(*) FROM public.sessoes WHERE status = 'transferido') as transferidas,\n  (SELECT COUNT(*) FROM public.sessoes WHERE status = 'ativo') as ativas,\n  (SELECT COUNT(*) FILTER (WHERE satisfacao = 'positivo') FROM public.sessoes WHERE satisfacao IS NOT NULL) as satisfacao_positivo,\n  (SELECT COUNT(*) FROM public.sessoes WHERE satisfacao IS NOT NULL) as satisfacao_total",
+        "query": "SELECT\n  (SELECT COUNT(*) FROM public.sessoes) as total_sessoes,\n  (SELECT COUNT(*) FROM public.sessoes WHERE criado_em >= CURRENT_DATE) as sessoes_hoje,\n  (SELECT COUNT(*) FROM public.sessoes WHERE status = 'resolvido' AND modo != 'humano') as resolvidas_ia,\n  (SELECT COUNT(*) FROM public.sessoes WHERE status = 'transferido') as transferidas,\n  (SELECT COUNT(*) FROM public.sessoes WHERE status = 'ativo') as ativas,\n  (SELECT COUNT(*) FROM public.mensagens WHERE avaliacao = 'positivo') as avaliacoes_positivas,\n  (SELECT COUNT(*) FROM public.mensagens WHERE avaliacao = 'negativo') as avaliacoes_negativas,\n  (SELECT COUNT(*) FROM public.mensagens WHERE avaliacao IS NOT NULL) as avaliacoes_total",
         "options": {}
       },
-      "id": "b0000011-0001-4000-b001-000000000002",
+      "id": "6fedaccd-2cd2-4d07-a636-979d4ce77c64",
       "name": "Metricas Dashboard",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-340, 1800],
+      "position": [
+        -336,
+        -608
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
@@ -706,13 +961,19 @@
         "query": "SELECT assunto, COUNT(*) as total FROM public.sessoes WHERE assunto IS NOT NULL AND assunto != '' GROUP BY assunto ORDER BY total DESC LIMIT 5",
         "options": {}
       },
-      "id": "b0000011-0001-4000-b001-000000000003",
+      "id": "76567445-8a9f-48ce-a006-2fa429b21a49",
       "name": "Top Assuntos",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [-80, 1800],
+      "position": [
+        -80,
+        -608
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
@@ -721,24 +982,33 @@
         "query": "SELECT id, organizacao_nome, usuario_nome, modulo, status, modo, criado_em FROM public.sessoes ORDER BY criado_em DESC LIMIT 5",
         "options": {}
       },
-      "id": "b0000011-0001-4000-b001-000000000004",
+      "id": "0d0b384e-8deb-4ccb-a52d-324099fa33a1",
       "name": "Sessoes Recentes",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [160, 1800],
+      "position": [
+        176,
+        -608
+      ],
       "credentials": {
-        "postgres": { "id": "lq3dPcTNeSRNyXW9", "name": "Bellory_APP_prod" }
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
       }
     },
     {
       "parameters": {
-        "jsCode": "const metricas = $('Metricas Dashboard').first().json;\nconst topAssuntos = $('Top Assuntos').all().map(i => i.json);\nconst sessoesRecentes = $input.all().map(i => i.json);\n\nconst satisfacaoPercent = metricas.satisfacao_total > 0\n  ? Math.round((metricas.satisfacao_positivo / metricas.satisfacao_total) * 100)\n  : 0;\n\nreturn [{\n  json: {\n    total_sessoes: parseInt(metricas.total_sessoes),\n    sessoes_hoje: parseInt(metricas.sessoes_hoje),\n    resolvidas_ia: parseInt(metricas.resolvidas_ia),\n    transferidas: parseInt(metricas.transferidas),\n    ativas: parseInt(metricas.ativas),\n    satisfacao: {\n      positivo: parseInt(metricas.satisfacao_positivo),\n      total: parseInt(metricas.satisfacao_total),\n      percentual: satisfacaoPercent\n    },\n    top_assuntos: topAssuntos,\n    sessoes_recentes: sessoesRecentes\n  }\n}];"
+        "jsCode": "const metricas = $('Metricas Dashboard').first().json;\nconst topAssuntos = $('Top Assuntos').all().map(i => i.json);\nconst sessoesRecentes = $input.all().map(i => i.json);\n\nconst positivas = parseInt(metricas.avaliacoes_positivas) || 0;\nconst negativas = parseInt(metricas.avaliacoes_negativas) || 0;\nconst totalAvaliacoes = parseInt(metricas.avaliacoes_total) || 0;\nconst totalSessoes = parseInt(metricas.total_sessoes) || 0;\nconst resolvidasIa = parseInt(metricas.resolvidas_ia) || 0;\n\nconst satisfacaoPercent = totalAvaliacoes > 0\n  ? Math.round((positivas / totalAvaliacoes) * 100)\n  : 0;\n\nconst taxaResolucao = totalSessoes > 0\n  ? Math.round((resolvidasIa / totalSessoes) * 100)\n  : 0;\n\nreturn [{\n  json: {\n    total_sessoes: totalSessoes,\n    sessoes_hoje: parseInt(metricas.sessoes_hoje) || 0,\n    resolvidas_ia: resolvidasIa,\n    transferidas: parseInt(metricas.transferidas) || 0,\n    ativas: parseInt(metricas.ativas) || 0,\n    taxa_resolucao: taxaResolucao,\n    satisfacao: {\n      positivo: positivas,\n      negativo: negativas,\n      total: totalAvaliacoes,\n      percentual: satisfacaoPercent\n    },\n    top_assuntos: topAssuntos,\n    sessoes_recentes: sessoesRecentes\n  }\n}];"
       },
-      "id": "b0000011-0001-4000-b001-000000000005",
+      "id": "373d9644-edf3-4e9c-a2ca-8fb676aaa598",
       "name": "Agregar Dashboard",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [400, 1800]
+      "position": [
+        416,
+        -608
+      ]
     },
     {
       "parameters": {
@@ -748,156 +1018,772 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" },
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
-      "id": "b0000011-0001-4000-b001-000000000006",
+      "id": "f3aa62c3-7714-4bbf-9af9-ff8389bb2f47",
       "name": "Responder Dashboard",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [640, 1800]
+      "position": [
+        656,
+        -608
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "suporte_avaliar_mensagem",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "0478c432-565f-4106-ae62-ad1891318d83",
+      "name": "Webhook Avaliar Mensagem",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        -336
+      ],
+      "webhookId": "suporte_avaliar_mensagem"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.mensagens SET avaliacao = CASE WHEN '{{ $json.body.avaliacao }}' = 'null' THEN NULL ELSE '{{ $json.body.avaliacao }}' END WHERE id = '{{ $json.body.mensagemId }}'",
+        "options": {}
+      },
+      "id": "f948312c-cbb4-47aa-a4ee-5c8bf33a3a25",
+      "name": "Atualizar Avaliacao Mensagem",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -336,
+        -336
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'ok' }) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "30e1a412-0e1b-445d-b62d-134fdc433a97",
+      "name": "Responder Avaliar Mensagem",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -80,
+        -336
+      ]
+    },
+    {
+      "parameters": {
+        "path": "suporte_configuracao",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "cb98c621-2dde-4887-8a21-589f4a2a57fc",
+      "name": "Webhook Configuracao",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        208
+      ],
+      "webhookId": "suporte_configuracao"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM public.configuracao_agente LIMIT 1",
+        "options": {}
+      },
+      "id": "55dd7db5-e463-4ed5-9aa9-9e132557e7da",
+      "name": "Buscar Configuracao",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -336,
+        208
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json || {}) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "cc50195b-ed5d-4cd8-9b8a-1ccbad1c7e5c",
+      "name": "Responder Configuracao",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -80,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "suporte_encerrar_inatividade",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "2dbf7882-5183-49de-a06b-61f6ccc13b9e",
+      "name": "Webhook Encerrar Inatividade",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        -64
+      ],
+      "webhookId": "suporte_encerrar_inatividade"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.sessoes SET status = 'resolvido', modo = 'ia', encerrado_em = NOW(), atualizado_em = NOW() WHERE id = '{{ $json.body.sessionId }}' AND status = 'ativo'",
+        "options": {}
+      },
+      "id": "9c15f49d-84c2-4209-9d9c-95744339201a",
+      "name": "Resolver Sessao Inatividade",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -336,
+        -64
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO public.mensagens (sessao_id, autor, conteudo, criado_em) VALUES ('{{ $('Webhook Encerrar Inatividade').item.json.body.sessionId }}', 'sistema', 'Atendimento encerrado automaticamente por inatividade (30 minutos sem interação).', NOW())",
+        "options": {}
+      },
+      "id": "227f1b1a-9998-4991-89b8-310b67014b85",
+      "name": "Mensagem Encerramento Inatividade",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -80,
+        -64
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'ok', encerrado: true }) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "74791fa2-d21c-4331-a91d-dc7ccf72e1a7",
+      "name": "Responder Encerrar Inatividade",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        176,
+        -64
+      ]
     }
   ],
   "pinData": {},
   "connections": {
     "Webhook Atendimentos": {
-      "main": [[{ "node": "Buscar Atendimentos", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Buscar Atendimentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Buscar Atendimentos": {
-      "main": [[{ "node": "Agregar Atendimentos", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Agregar Atendimentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Agregar Atendimentos": {
-      "main": [[{ "node": "Responder Atendimentos", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder Atendimentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-
     "Webhook Detalhe": {
-      "main": [[{ "node": "Buscar Sessao Detalhe", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Buscar Sessao Detalhe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Buscar Sessao Detalhe": {
-      "main": [[{ "node": "Extrair Sessao Detalhe", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Extrair Sessao Detalhe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Extrair Sessao Detalhe": {
-      "main": [[{ "node": "Buscar Mensagens Detalhe", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Buscar Mensagens Detalhe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Buscar Mensagens Detalhe": {
-      "main": [[{ "node": "Montar Detalhe", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Montar Detalhe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Montar Detalhe": {
-      "main": [[{ "node": "Responder Detalhe", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder Detalhe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-
     "Webhook Resposta Humana": {
-      "main": [[{ "node": "Salvar Resposta Humana", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Salvar Resposta Humana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Salvar Resposta Humana": {
-      "main": [[{ "node": "Atualizar Sessao Humana", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Atualizar Sessao Humana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Atualizar Sessao Humana": {
-      "main": [[{ "node": "Responder Resposta Humana", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder Resposta Humana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-
     "Webhook Resolver": {
-      "main": [[{ "node": "Resolver Sessao", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Resolver Sessao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Resolver Sessao": {
-      "main": [[{ "node": "Mensagem Resolucao", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Mensagem Resolucao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Mensagem Resolucao": {
-      "main": [[{ "node": "Responder Resolver", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder Resolver",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-
     "Webhook Poll Admin": {
-      "main": [[{ "node": "Poll Mensagens Admin", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Poll Mensagens Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Poll Mensagens Admin": {
-      "main": [[{ "node": "Preparar Poll Admin", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Preparar Poll Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Preparar Poll Admin": {
-      "main": [[{ "node": "Status Sessao Admin", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Status Sessao Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Status Sessao Admin": {
-      "main": [[{ "node": "Montar Poll Admin", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Montar Poll Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Montar Poll Admin": {
-      "main": [[{ "node": "Responder Poll Admin", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder Poll Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-
     "Webhook Poll Cliente": {
-      "main": [[{ "node": "Poll Mensagens Cliente", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Poll Mensagens Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Poll Mensagens Cliente": {
-      "main": [[{ "node": "Preparar Poll Cliente", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Preparar Poll Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Preparar Poll Cliente": {
-      "main": [[{ "node": "Status Sessao Cliente", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Status Sessao Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Status Sessao Cliente": {
-      "main": [[{ "node": "Montar Poll Cliente", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Montar Poll Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Montar Poll Cliente": {
-      "main": [[{ "node": "Responder Poll Cliente", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder Poll Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-
     "Webhook Documentos": {
-      "main": [[{ "node": "Buscar Documentos", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Buscar Documentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Buscar Documentos": {
-      "main": [[{ "node": "Formatar Documentos", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Formatar Documentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Formatar Documentos": {
-      "main": [[{ "node": "Responder Documentos", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder Documentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-
     "Webhook Registrar Documento": {
-      "main": [[{ "node": "Inserir Documento", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Inserir Documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Inserir Documento": {
-      "main": [[{ "node": "Responder Registrar Documento", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder Registrar Documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-
     "Webhook Atualizar Documento": {
-      "main": [[{ "node": "Atualizar Documento", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Atualizar Documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Atualizar Documento": {
-      "main": [[{ "node": "Responder Atualizar Documento", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder Atualizar Documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-
     "Webhook Excluir Documento": {
-      "main": [[{ "node": "Excluir Chunks", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Excluir Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Excluir Chunks": {
-      "main": [[{ "node": "Excluir Documento Base", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Excluir Documento Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Excluir Documento Base": {
-      "main": [[{ "node": "Responder Excluir Documento", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder Excluir Documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-
     "Webhook Dashboard": {
-      "main": [[{ "node": "Metricas Dashboard", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Metricas Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Metricas Dashboard": {
-      "main": [[{ "node": "Top Assuntos", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Top Assuntos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Top Assuntos": {
-      "main": [[{ "node": "Sessoes Recentes", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Sessoes Recentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Sessoes Recentes": {
-      "main": [[{ "node": "Agregar Dashboard", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Agregar Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Agregar Dashboard": {
-      "main": [[{ "node": "Responder Dashboard", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Avaliar Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Avaliacao Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar Avaliacao Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Responder Avaliar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Encerrar Inatividade": {
+      "main": [
+        [
+          {
+            "node": "Resolver Sessao Inatividade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolver Sessao Inatividade": {
+      "main": [
+        [
+          {
+            "node": "Mensagem Encerramento Inatividade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem Encerramento Inatividade": {
+      "main": [
+        [
+          {
+            "node": "Responder Encerrar Inatividade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Configuracao": {
+      "main": [
+        [
+          {
+            "node": "Buscar Configuracao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Configuracao": {
+      "main": [
+        [
+          {
+            "node": "Responder Configuracao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "f1a2b3c4-0002-4000-a002-000000000001",
+  "versionId": "c3eeeb62-4afa-4e30-ba12-11a4a23c37e5",
   "meta": {
-    "templateCredsSetupCompleted": true
+    "instanceId": "7cd2192570f690f192d4d8c0d58a905ea183da6f294052109cd14343322150c9"
   },
+  "id": "VqTkuMWCd3X1WUbu",
   "tags": []
 }

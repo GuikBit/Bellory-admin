@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS mensagens (
     autor VARCHAR(20) NOT NULL,                         -- cliente | agente | humano | sistema
     conteudo TEXT NOT NULL,
     imagens TEXT[],
+    avaliacao VARCHAR(10),                              -- positivo | negativo | null
+    atendente_nome VARCHAR(255),                        -- nome do operador (quando autor = 'humano')
     criado_em TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -71,3 +73,23 @@ CREATE TABLE IF NOT EXISTS transferencias (
 );
 
 CREATE INDEX IF NOT EXISTS idx_transferencias_sessao ON transferencias(sessao_id);
+
+-- Configuração do agente de suporte (uma linha por organização)
+CREATE TABLE IF NOT EXISTS configuracao_agente (
+    id SERIAL PRIMARY KEY,
+    organizacao_id BIGINT NOT NULL UNIQUE,
+    status_agente BOOLEAN NOT NULL DEFAULT TRUE,              -- agente ativo ou inativo
+    nome_agente VARCHAR(255) NOT NULL DEFAULT 'Assistente Bellory',
+    mensagem_boas_vindas TEXT DEFAULT 'Olá! Como posso ajudá-lo hoje?',
+    mensagem_transferencia TEXT DEFAULT 'Você será transferido para um atendente humano.',
+    mensagem_encerramento TEXT DEFAULT 'Atendimento encerrado. Obrigado pelo contato!',
+    email_transferencia VARCHAR(255),                         -- e-mail destino para transferências
+    tempo_max_resposta INT NOT NULL DEFAULT 300,              -- tempo máximo de resposta em segundos
+    tentativas_para_transferir INT NOT NULL DEFAULT 3,        -- falhas antes de transferir para humano
+    horario_inicio TIME NOT NULL DEFAULT '08:00',             -- início do atendimento humano
+    horario_fim TIME NOT NULL DEFAULT '18:00',                -- fim do atendimento humano
+    criado_em TIMESTAMPTZ DEFAULT NOW(),
+    atualizado_em TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_config_agente_org ON configuracao_agente(organizacao_id);

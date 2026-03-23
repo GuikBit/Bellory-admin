@@ -12,6 +12,13 @@ import {
   uploadDocumento,
   atualizarDocumentoStatus,
   excluirDocumento,
+  avaliarMensagem,
+  uploadImagem,
+  listarImagens,
+  deletarImagem,
+  criarPasta,
+  listarPastas,
+  deletarPasta,
 } from '../services/suporte'
 import type { Mensagem } from '../types/suporte'
 import toast from 'react-hot-toast'
@@ -205,6 +212,96 @@ export function useExcluirDocumento() {
     },
     onError: () => {
       toast.error('Erro ao excluir documento')
+    },
+  })
+}
+
+// ── Avaliação de Mensagens ────────────────────────────────────────
+
+export function useAvaliarMensagem() {
+  return useMutation({
+    mutationFn: avaliarMensagem,
+    onError: () => {
+      toast.error('Erro ao avaliar mensagem')
+    },
+  })
+}
+
+// ── Imagens da Base de Conhecimento ──────────────────────────────────
+
+export function useSuporteImagens(pasta?: string) {
+  return useQuery({
+    queryKey: ['suporte-imagens', pasta],
+    queryFn: () => listarImagens(pasta),
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
+  })
+}
+
+export function useSuportePastas() {
+  return useQuery({
+    queryKey: ['suporte-pastas'],
+    queryFn: listarPastas,
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
+  })
+}
+
+export function useUploadImagem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ file, pasta, nome }: { file: File; pasta?: string; nome?: string }) => uploadImagem(file, pasta, nome),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['suporte-imagens'] })
+      queryClient.invalidateQueries({ queryKey: ['suporte-pastas'] })
+      toast.success(data.message || 'Imagem enviada com sucesso')
+    },
+    onError: () => {
+      toast.error('Erro ao enviar imagem')
+    },
+  })
+}
+
+export function useDeletarImagem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deletarImagem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suporte-imagens'] })
+      queryClient.invalidateQueries({ queryKey: ['suporte-pastas'] })
+      toast.success('Imagem excluída com sucesso')
+    },
+    onError: () => {
+      toast.error('Erro ao excluir imagem')
+    },
+  })
+}
+
+export function useCriarPasta() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: criarPasta,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['suporte-pastas'] })
+      toast.success(data.message || 'Pasta criada com sucesso')
+    },
+    onError: () => {
+      toast.error('Erro ao criar pasta')
+    },
+  })
+}
+
+export function useDeletarPasta() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deletarPasta,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suporte-pastas'] })
+      queryClient.invalidateQueries({ queryKey: ['suporte-imagens'] })
+      toast.success('Pasta e imagens excluídas com sucesso')
+    },
+    onError: () => {
+      toast.error('Erro ao excluir pasta')
     },
   })
 }
