@@ -1,0 +1,1079 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "filename",
+                "value": "={{ $json.filename }}"
+              },
+              {
+                "name": "category",
+                "value": "={{ $json.category }}"
+              },
+              {
+                "name": "source",
+                "value": "={{ $json.source }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "b171b588-0230-4af9-8cf0-a81815f730e8",
+      "name": "TEXT Loader1",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        144,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "filename",
+                "value": "={{ $json.filename }}"
+              },
+              {
+                "name": "category",
+                "value": "={{ $json.category }}"
+              },
+              {
+                "name": "source",
+                "value": "={{ $json.source }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "7cb649bd-dc2a-4f30-ac10-7919a518cbba",
+      "name": "JSON Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        112,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "8aa9491d-16da-4b29-923f-6bce88042bec",
+      "name": "XLSX Loader1",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        80,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"error\",\"message\":\"Tipo de arquivo não suportado. Use: pdf, docx, xlsx, json, txt, md\"}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "7cb8c704-5f71-4c80-9e9c-3cafc385313a",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -448,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "c0984288-b86d-4075-bab0-26b2a46bde97",
+      "name": "Respond Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1328,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Registra o documento na tabela de metadados\nconst items = $input.all();\nconst summary = {\n  status: 'success',\n  message: `Ingestão concluída com sucesso`,\n  documents_processed: items.length,\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: summary }];"
+      },
+      "id": "a08d7188-dff5-481d-9b1b-1793f7d59037",
+      "name": "Log Sucesso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "document_chunks",
+        "options": {}
+      },
+      "id": "995b4f98-36ca-4c3d-96a4-9fc3c2b74471",
+      "name": "PGVector Insert TXT",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1,
+      "position": [
+        32,
+        1424
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "lq3dPcTNeSRNyXW9",
+          "name": "Bellory_APP_prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "document_chunks",
+        "options": {}
+      },
+      "id": "e2aa74bc-d4d6-44d6-a7f3-2251ca1cfaec",
+      "name": "PGVector Insert JSON",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1,
+      "position": [
+        32,
+        1024
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "lq3dPcTNeSRNyXW9",
+          "name": "Bellory_APP_prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "document_chunks",
+        "options": {}
+      },
+      "id": "f174d0b5-0913-46f5-95d3-1377edc9a7bb",
+      "name": "PGVector Insert XLSX",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1,
+      "position": [
+        16,
+        656
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "lq3dPcTNeSRNyXW9",
+          "name": "Bellory_APP_prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "document_chunks",
+        "options": {}
+      },
+      "id": "e9bc2302-2321-4132-8971-956916ca3f5a",
+      "name": "PGVector Insert DOCX",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1,
+      "position": [
+        16,
+        320
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "lq3dPcTNeSRNyXW9",
+          "name": "Bellory_APP_prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "document_chunks",
+        "options": {}
+      },
+      "id": "035ffe0e-33d4-4d1f-8569-a1e63c99af54",
+      "name": "PGVector Insert PDF",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "lq3dPcTNeSRNyXW9",
+          "name": "Bellory_APP_prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "id": "ecf37881-8c5e-4d08-8dee-8fc3fcfe3912",
+      "name": "Embeddings TXT",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "id": "cc387507-9e9b-4861-bec7-9a4b88bec87f",
+      "name": "Embeddings JSON",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "id": "cf568358-c75e-4a46-a3ff-3e115fc9004c",
+      "name": "Embeddings XLSX",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "id": "1ceba0fa-12c4-4f7a-87d9-f88966975d79",
+      "name": "Embeddings DOCX",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "id": "5af840ae-f65b-4a86-a4fa-5f8574c42aa8",
+      "name": "Embeddings PDF",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "aa19bf3c-b320-47a6-84b0-b5919d8a1be1",
+      "name": "Splitter TXT",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        432,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 150,
+        "options": {}
+      },
+      "id": "3e56af37-e726-461a-a5c5-49f535867c94",
+      "name": "Splitter JSON",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        384,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 800,
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "id": "e8350c0a-55ae-4160-99ed-a45c28fe36d7",
+      "name": "Splitter XLSX",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        368,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "06b64e83-4a96-4157-83d6-f583a977fc25",
+      "name": "Splitter DOCX",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        352,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "da9fe547-cba7-43a7-bff0-3b97fe75f135",
+      "name": "Splitter PDF",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        320,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3a588e63-c7a3-4740-bdbf-518d09c0371a",
+      "name": "DOCX Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        48,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "00a1ad55-f74b-4c2e-bc60-bfca4db3c0ba",
+      "name": "PDF Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        16,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst binary = item.binary || {};\nconst detectar = $('Detectar Tipo1').first().json;\n\n// Ler o conteúdo do arquivo TXT a partir do binário\nlet text = '';\nif (binary.data) {\n  const buffer = await this.helpers.getBinaryDataBuffer(0, 'data');\n  text = buffer.toString('utf-8');\n}\n\n// Fallback: tentar campos JSON\nif (!text) {\n  const json = item.json || {};\n  text = json.text || json.content || json.file_content || '';\n}\n\nreturn [{\n  json: {\n    text: text,\n    filename: detectar.filename || 'documento.txt',\n    category: detectar.category || 'geral',\n    source: detectar.source || 'manual_upload'\n  }\n}];"
+      },
+      "id": "f4c2acf2-b554-4a27-b193-d465e4dd7a02",
+      "name": "Set Metadata TXT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        1232
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst binary = item.binary || {};\nconst detectar = $('Detectar Tipo1').first().json;\nconst results = [];\n\n// Ler o conteúdo real do arquivo JSON a partir do binário\nlet content = {};\nif (binary.data) {\n  const buffer = await this.helpers.getBinaryDataBuffer(0, 'data');\n  const rawText = buffer.toString('utf-8');\n  try {\n    content = JSON.parse(rawText);\n  } catch(e) {\n    results.push({\n      json: {\n        text: rawText,\n        pageContent: rawText,\n        filename: detectar.filename || 'dados.json',\n        category: detectar.category || 'geral',\n        source: detectar.source || 'manual_upload'\n      }\n    });\n    return results;\n  }\n}\n\nconst filename = detectar.filename || 'dados.json';\nconst category = detectar.category || 'geral';\nconst source = detectar.source || 'manual_upload';\n\nfunction flattenJSON(obj, prefix = '') {\n  let lines = [];\n  for (const [key, value] of Object.entries(obj)) {\n    const path = prefix ? `${prefix}.${key}` : key;\n    if (value && typeof value === 'object' && !Array.isArray(value)) {\n      lines = lines.concat(flattenJSON(value, path));\n    } else if (Array.isArray(value)) {\n      value.forEach((item, idx) => {\n        if (typeof item === 'object' && item !== null) {\n          lines = lines.concat(flattenJSON(item, `${path}[${idx}]`));\n        } else {\n          lines.push(`${path}[${idx}]: ${item}`);\n        }\n      });\n    } else {\n      lines.push(`${path}: ${value}`);\n    }\n  }\n  return lines;\n}\n\nconst flat = flattenJSON(content);\nconst text = `Fonte: ${filename}\\nCategoria: ${category}\\n\\n` + flat.join('\\n');\n\nconst maxChars = 1500;\nif (text.length > maxChars) {\n  const lines = text.split('\\n');\n  let currentChunk = `Fonte: ${filename} | Categoria: ${category}\\n\\n`;\n\n  for (const line of lines) {\n    if ((currentChunk + line + '\\n').length > maxChars && currentChunk.length > 100) {\n      results.push({\n        json: {\n          text: currentChunk.trim(),\n          filename, category, source\n        }\n      });\n      currentChunk = `Fonte: ${filename} (continuação)\\n\\n`;\n    }\n    currentChunk += line + '\\n';\n  }\n  if (currentChunk.trim().length > 50) {\n    results.push({\n      json: {\n        text: currentChunk.trim(),\n        filename, category, source\n      }\n    });\n  }\n} else {\n  results.push({\n    json: {\n      text: text,\n      filename, category, source\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "bee4337e-2b6d-4282-8f4c-c1842d017163",
+      "name": "Processar JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// XLSX: O Extract from File já converteu para JSON\n// Cada linha da planilha vira um item com as colunas como campos\nconst inputData = $input.all();\nconst results = [];\nconst detectar = $('Detectar Tipo1').first().json;\nconst filename = detectar.filename || 'planilha.xlsx';\nconst category = detectar.category || 'geral';\nconst source = detectar.source || 'manual_upload';\n\n// O Extract from File (xlsx) retorna cada linha como um objeto JSON\nconst headers = Object.keys(inputData[0]?.json || {});\n\nif (headers.length > 0) {\n  const textBlocks = inputData.map(item => {\n    return headers.map(h => `${h}: ${item.json[h] || 'N/A'}`).join(' | ');\n  });\n  \n  // Agrupa em blocos de 10 linhas\n  const groupSize = 10;\n  for (let i = 0; i < textBlocks.length; i += groupSize) {\n    const headerContext = `Fonte: ${filename}\\nColunas: ${headers.join(', ')}\\n\\n`;\n    const chunk = headerContext + textBlocks.slice(i, i + groupSize).join('\\n');\n    results.push({\n      json: {\n        text: chunk,\n        filename, category, source\n      }\n    });\n  }\n}\n\nif (results.length === 0) {\n  // Fallback: pegar todo o texto como está\n  const allText = inputData.map(item => {\n    const t = item.json.text || JSON.stringify(item.json);\n    return t;\n  }).join('\\n');\n  \n  results.push({\n    json: { text: allText, filename, category, source }\n  });\n}\n\nreturn results;"
+      },
+      "id": "a8708480-fa81-4bb3-b842-5db8b5cd3f96",
+      "name": "Processar XLSX",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pegar texto extraído + metadata do webhook\nconst item = $input.first();\nconst json = item.json || {};\nconst binary = item.binary || {};\n\nconst text = json.text || '';\nconst detectar = $('Detectar Tipo1').first().json;\n\nreturn [{\n  json: {\n    text: text,\n    filename: detectar.filename || 'documento.docx',\n    category: detectar.category || 'geral',\n    source: detectar.source || 'manual_upload',\n    doc_id: $runIndex + '-' + Date.now()\n  },\n  binary: binary\n}];"
+      },
+      "id": "8d71f8b4-ad8c-4577-a1ae-d6680b8f42de",
+      "name": "Set Metadata DOCX",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pegar texto extraído pelo Extract from File + metadata do webhook\nconst item = $input.first();\nconst json = item.json || {};\nconst binary = item.binary || {};\n\n// O Extract from File coloca o texto em json.text\nconst text = json.text || '';\n// Metadata vem do nó Detectar Tipo (acessar via referência)\nconst detectar = $('Detectar Tipo1').first().json;\n\nreturn [{\n  json: {\n    text: text,\n    filename: detectar.filename || 'documento.pdf',\n    category: detectar.category || 'geral',\n    source: detectar.source || 'manual_upload',\n    doc_id: $runIndex + '-' + Date.now()\n  },\n  binary: binary\n}];"
+      },
+      "id": "5e26fa21-d94d-45f5-bbf7-5bb1ecfabbe3",
+      "name": "Set Metadata PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.file_type }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "940ea06c-eb2f-4b6c-9256-1ed7ae0750d7"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.file_type }}",
+                    "rightValue": "docx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f1e9d705-7e76-4b72-8836-9b46201a8647"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.file_type }}",
+                    "rightValue": "xlsx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "ccd914f0-6e8b-4480-96a4-b286707a0583"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.file_type }}",
+                    "rightValue": "json",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "20863a4d-e394-4ae3-8734-9e9107df088a"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.file_type }}",
+                    "rightValue": "txt",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "4c8bc26f-b11a-4283-bceb-bbf220840e9e"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.file_type }}",
+                    "rightValue": "md",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "223f35f5-170a-47a5-8b49-d01d9d48a022",
+      "name": "Switch por Tipo",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -960,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "suporte_upload_base_conhecimento",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "5ab55666-4dab-40a9-b9d9-4031313e0d9d",
+      "name": "Webhook Ingestão",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        896
+      ],
+      "webhookId": "ingest-kb-001"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst json = item.json || {};\nconst binary = item.binary || {};\n\nconst binaryKey = Object.keys(binary)[0];\nlet filename = '';\nlet mimeType = '';\nlet fileType = '';\n\nif (binaryKey && binary[binaryKey]) {\n  filename = binary[binaryKey].fileName || '';\n  mimeType = binary[binaryKey].mimeType || '';\n}\n\nif (!filename) {\n  filename = json.filename || json.fileName || '';\n  mimeType = json.mimeType || json.mime_type || '';\n}\n\n// Detectar pela extensão\nconst ext = filename.split('.').pop()?.toLowerCase() || '';\n\nconst extMap = ['pdf', 'docx', 'xlsx', 'json', 'txt', 'md'];\nconst mimeMap = {\n  'application/pdf': 'pdf',\n  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',\n  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',\n  'application/json': 'json',\n  'text/json': 'json',\n  'text/plain': 'txt',\n  'text/csv': 'txt',\n  'text/markdown': 'md',\n  'text/x-markdown': 'md',\n};\n\nif (extMap.includes(ext)) {\n  fileType = ext;\n} else if (mimeMap[mimeType]) {\n  fileType = mimeMap[mimeType];\n} else if (!binaryKey && typeof json === 'object' && Object.keys(json).length > 0) {\n  // Se não tem binário mas tem dados JSON no body, tratar como JSON\n  fileType = 'json';\n} else {\n  fileType = 'txt';\n}\n\nconst category = json.category || 'geral';\nconst source = json.source || 'manual_upload';\n\nreturn [{\n  json: {\n    file_type: fileType,\n    filename: filename || `documento.${fileType}`,\n    category: category,\n    source: source,\n    mimeType: mimeType\n  },\n  binary: binaryKey ? { data: binary[binaryKey] } : {}\n}];"
+      },
+      "id": "04a5bcf7-2a52-4cc4-9700-0ac88c0ab72a",
+      "name": "Detectar Tipo1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1184,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "3da0a7ed-b06f-403b-85e6-9eab52a6598a",
+      "name": "Extract PDF1",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -704,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "id": "fb2f71cd-77e0-4ddd-9193-de0014ef0e38",
+      "name": "Extract XLSX1",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -704,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "d447ca95-61e9-4f1d-b5f2-828bac16fa48",
+      "name": "Extract DOCX1",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -704,
+        480
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "TEXT Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "PGVector Insert TXT",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "PGVector Insert JSON",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "PGVector Insert XLSX",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Sucesso": {
+      "main": [
+        [
+          {
+            "node": "Respond Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PGVector Insert TXT": {
+      "main": [
+        [
+          {
+            "node": "Log Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PGVector Insert JSON": {
+      "main": [
+        [
+          {
+            "node": "Log Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PGVector Insert XLSX": {
+      "main": [
+        [
+          {
+            "node": "Log Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PGVector Insert DOCX": {
+      "main": [
+        [
+          {
+            "node": "Log Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PGVector Insert PDF": {
+      "main": [
+        [
+          {
+            "node": "Log Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings TXT": {
+      "ai_embedding": [
+        [
+          {
+            "node": "PGVector Insert TXT",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings JSON": {
+      "ai_embedding": [
+        [
+          {
+            "node": "PGVector Insert JSON",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings XLSX": {
+      "ai_embedding": [
+        [
+          {
+            "node": "PGVector Insert XLSX",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings DOCX": {
+      "ai_embedding": [
+        [
+          {
+            "node": "PGVector Insert DOCX",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings PDF": {
+      "ai_embedding": [
+        [
+          {
+            "node": "PGVector Insert PDF",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Splitter TXT": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "TEXT Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Splitter JSON": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "JSON Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Splitter XLSX": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "XLSX Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Splitter DOCX": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "DOCX Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Splitter PDF": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "PDF Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DOCX Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "PGVector Insert DOCX",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "PGVector Insert PDF",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Metadata TXT": {
+      "main": [
+        [
+          {
+            "node": "PGVector Insert TXT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar JSON": {
+      "main": [
+        [
+          {
+            "node": "PGVector Insert JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar XLSX": {
+      "main": [
+        [
+          {
+            "node": "PGVector Insert XLSX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Metadata DOCX": {
+      "main": [
+        [
+          {
+            "node": "PGVector Insert DOCX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Metadata PDF": {
+      "main": [
+        [
+          {
+            "node": "PGVector Insert PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch por Tipo": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract DOCX1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract XLSX1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Processar JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Metadata TXT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Metadata TXT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Ingestão": {
+      "main": [
+        [
+          {
+            "node": "Detectar Tipo1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detectar Tipo1": {
+      "main": [
+        [
+          {
+            "node": "Switch por Tipo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF1": {
+      "main": [
+        [
+          {
+            "node": "Set Metadata PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract XLSX1": {
+      "main": [
+        [
+          {
+            "node": "Processar XLSX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract DOCX1": {
+      "main": [
+        [
+          {
+            "node": "Set Metadata DOCX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "25e7cdc9-453f-4733-bb37-e3dc5ac71c57",
+  "meta": {
+    "instanceId": "7cd2192570f690f192d4d8c0d58a905ea183da6f294052109cd14343322150c9"
+  },
+  "id": "WpDjS4FRWDHOADvz",
+  "tags": []
+}

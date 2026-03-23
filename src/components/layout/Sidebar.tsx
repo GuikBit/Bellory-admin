@@ -21,6 +21,7 @@ import {
   Receipt,
   Ticket,
   BarChart3,
+  Bot,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -40,6 +41,7 @@ const navItems = [
   { path: '/templates', icon: FileText, label: 'Templates' },
   { path: '/usuarios', icon: ShieldCheck, label: 'Usuários' },
   { path: '/analytics', icon: BarChart3, label: 'Analytics' },
+  { path: '/agente-ia', icon: Bot, label: 'Agente IA' },
   {
     label: 'Métricas',
     children: [

@@ -35,6 +35,7 @@ const AnalyticsBehavior = lazy(() => import('./pages/analytics/AnalyticsBehavior
 const AnalyticsConversions = lazy(() => import('./pages/analytics/AnalyticsConversions').then(m => ({ default: m.AnalyticsConversions })))
 const AnalyticsContext = lazy(() => import('./pages/analytics/AnalyticsContext').then(m => ({ default: m.AnalyticsContext })))
 const AnalyticsRealtime = lazy(() => import('./pages/analytics/AnalyticsRealtime').then(m => ({ default: m.AnalyticsRealtime })))
+const AgenteIALayout = lazy(() => import('./pages/agente-ia/AgenteIALayout').then(m => ({ default: m.AgenteIALayout })))
 
 function LoadingFallback() {
   return (
@@ -101,6 +102,7 @@ export function App() {
             <Route path="/cupons/novo" element={<CupomForm />} />
             <Route path="/cupons/:id" element={<CupomDetail />} />
             <Route path="/cupons/:id/editar" element={<CupomForm />} />
+            <Route path="/agente-ia" element={<AgenteIALayout />} />
             <Route path="/analytics" element={<AnalyticsLayout />}>
               <Route index element={<AnalyticsOverview />} />
               <Route path="overview" element={<AnalyticsOverview />} />
