@@ -242,7 +242,7 @@
     {
       "parameters": {
         "name": "buscar_knowledge_base",
-        "description": "Busca informações na base de conhecimento técnico do CRM e da telefonia. SEMPRE use esta ferramenta ANTES de responder qualquer pergunta técnica. Ela consulta manuais, documentações, troubleshooting e FAQs. Envie como input a pergunta ou o problema técnico descrito pelo cliente, reformulado de forma clara.\nResponda somente com base nas informações encontradas na base de conhecimento, se não encontrar retornar uma mensagem de conteúdo não localizado.",
+        "description": "Busca informações na base de conhecimento do sistema Bellory. SEMPRE use esta ferramenta ANTES de responder qualquer pergunta do cliente. Ela consulta tutoriais, guias passo a passo, prints de tela, troubleshooting e FAQs sobre as funcionalidades do Bellory (cadastros, dashboards, relatórios, configurações, etc).\n\nEnvie como input a dúvida ou problema do cliente reformulado de forma clara e objetiva.\n\nREGRAS IMPORTANTES:\n- Responda SOMENTE com base nas informações retornadas pela base de conhecimento.\n- Se a base retornar URLs de imagens (formato ![texto](URL)), copie a URL EXATAMENTE como está, sem modificar nenhum caractere.\n- Se não encontrar informação relevante, informe que não localizou o conteúdo e sugira reformular a pergunta ou transferir para atendimento humano.\n- NÃO invente informações, links ou URLs que não estejam nos resultados retornados.",
         "topK": 5
       },
       "id": "cbfb23ea-8fa5-4e7f-a57f-a0f4c0a49732",
