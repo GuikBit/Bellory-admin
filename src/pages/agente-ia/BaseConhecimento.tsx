@@ -121,7 +121,7 @@ export function BaseConhecimento() {
 
       if (imageFiles.length > 0) {
         clipboardEvent.preventDefault()
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
         const maxSize = 5 * 1024 * 1024
         const validos: { file: File; nome: string; previewUrl: string }[] = []
 
@@ -711,7 +711,7 @@ export function BaseConhecimento() {
                     Arraste, clique para selecionar ou cole (Ctrl+V)
                   </p>
                   <p className="text-xs text-[#6b5d57] dark:text-[#B8AEA4]">
-                    Formatos: JPG, JPEG, PNG, GIF, WEBP · Max 5MB
+                    Formatos: JPG, JPEG, PNG, GIF, WEBP, SVG · Max 5MB
                   </p>
                   <div className="flex items-center justify-center gap-1.5 mt-3 text-[10px] text-[#b8aea4] dark:text-[#6b5d57]">
                     <Clipboard size={10} />
@@ -720,7 +720,7 @@ export function BaseConhecimento() {
                   <input
                     id="imagem-upload"
                     type="file"
-                    accept=".jpg,.jpeg,.png,.gif,.webp"
+                    accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
                     multiple
                     className="hidden"
                     onChange={(e) => { prepararArquivos(e.target.files); e.target.value = '' }}
@@ -948,7 +948,7 @@ export function BaseConhecimento() {
 
   function prepararArquivos(files: FileList | null) {
     if (!files) return
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
     const maxSize = 5 * 1024 * 1024 // 5MB
 
     const validos: { file: File; nome: string; previewUrl: string }[] = []
