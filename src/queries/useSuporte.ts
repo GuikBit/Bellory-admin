@@ -19,8 +19,10 @@ import {
   criarPasta,
   listarPastas,
   deletarPasta,
+  getConfiguracaoAgente,
+  salvarConfiguracaoAgente,
 } from '../services/suporte'
-import type { Mensagem } from '../types/suporte'
+import type { Mensagem, ConfiguracaoAgente } from '../types/suporte'
 import toast from 'react-hot-toast'
 
 // ── Dashboard ──────────────────────────────────────────────────────
@@ -140,6 +142,31 @@ export function useResolverAtendimento() {
     },
     onError: () => {
       toast.error('Erro ao resolver atendimento')
+    },
+  })
+}
+
+// ── Configuração do Agente ─────────────────────────────────────────
+
+export function useConfiguracaoAgente() {
+  return useQuery({
+    queryKey: ['suporte-configuracao'],
+    queryFn: getConfiguracaoAgente,
+    staleTime: 60000,
+    refetchOnWindowFocus: true,
+  })
+}
+
+export function useSalvarConfiguracaoAgente() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: salvarConfiguracaoAgente,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suporte-configuracao'] })
+      toast.success('Configurações salvas no servidor')
+    },
+    onError: () => {
+      toast.error('Erro ao salvar configurações')
     },
   })
 }

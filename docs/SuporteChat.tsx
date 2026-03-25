@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Bot, BotMessageSquare, Send, X, Loader2, Trash2, ImagePlus, UserCheck, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Bot, BotMessageSquare, Send, X, Loader2, Trash2, ImagePlus, UserCheck, ThumbsUp, ThumbsDown, Timer } from "lucide-react";
 import { useLocation } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../../global/Theme-context";
@@ -66,10 +66,10 @@ function detectarModulo(pathname: string): ModuloInfo {
   return { nome: "Sistema", descricao: "Área geral do sistema" };
 }
 
-// ── Persistência com TTL de 30 minutos ──────────────────────────────
+// ── Persistência com TTL dinâmico (configurável) ────────────────────
 
 const STORAGE_KEY = "bellory_suporte_chat";
-const TTL_MS = 30 * 60 * 1000; // 30 minutos
+const DEFAULT_TTL_MINUTOS = 30;
 const POLL_URL_BASE = "https://auto.bellory.com.br/webhook/suporte_mensagens_poll";
 const AVALIAR_URL = "https://auto.bellory.com.br/webhook/suporte_avaliar_mensagem";
 const ENCERRAR_INATIVIDADE_URL = "https://auto.bellory.com.br/webhook/suporte_encerrar_inatividade";
@@ -83,15 +83,38 @@ interface ChatStorage {
   sessionId: string;
   modo: "ia" | "humano";
   avaliacoes: Record<string, Avaliacao>;
+  ttlMinutos: number;
+  ultimaMensagemServidor: string; // ISO timestamp da ultima_mensagem_em do banco
 }
 
-function salvarChat(mensagens: Mensagem[], sessionId: string, modo: "ia" | "humano", avaliacoes: Record<string, Avaliacao>) {
+function salvarChat(
+  mensagens: Mensagem[],
+  sessionId: string,
+  modo: "ia" | "humano",
+  avaliacoes: Record<string, Avaliacao>,
+  ttlMinutos: number,
+  ultimaMensagemServidor?: string
+) {
+  // Preservar o timestamp do servidor se não for passado um novo
+  let servidorTs = ultimaMensagemServidor;
+  if (!servidorTs) {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const prev: ChatStorage = JSON.parse(raw);
+        servidorTs = prev.ultimaMensagemServidor;
+      }
+    } catch { /* ignore */ }
+  }
+
   const data: ChatStorage = {
     mensagens: mensagens.map((m) => ({ ...m, timestamp: m.timestamp.toISOString() })),
     salvoEm: Date.now(),
     sessionId,
     modo,
     avaliacoes,
+    ttlMinutos,
+    ultimaMensagemServidor: servidorTs || new Date().toISOString(),
   };
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
@@ -102,6 +125,8 @@ interface ChatCarregado {
   modo: "ia" | "humano";
   avaliacoes: Record<string, Avaliacao>;
   expirado: boolean;
+  ttlMinutos: number;
+  ultimaMensagemServidor: string;
 }
 
 function carregarChat(): ChatCarregado | null {
@@ -112,11 +137,13 @@ function carregarChat(): ChatCarregado | null {
     const data: ChatStorage = JSON.parse(raw);
     const mensagens = data.mensagens.map((m) => ({ ...m, timestamp: new Date(m.timestamp) }));
 
-    // Verifica se a última mensagem é mais antiga que 30 minutos
-    const ultimaMensagem = mensagens.length > 0
-      ? mensagens[mensagens.length - 1].timestamp.getTime()
-      : data.salvoEm;
-    const expirado = Date.now() - ultimaMensagem > TTL_MS;
+    const ttlMinutos = data.ttlMinutos || DEFAULT_TTL_MINUTOS;
+    const ttlMs = ttlMinutos * 60 * 1000;
+
+    // Verifica expiração baseado no timestamp da última mensagem do SERVIDOR
+    const ultimaMensagemServidor = data.ultimaMensagemServidor || new Date().toISOString();
+    const ultimaMensagemMs = new Date(ultimaMensagemServidor).getTime();
+    const expirado = Date.now() - ultimaMensagemMs > ttlMs;
 
     return {
       mensagens,
@@ -124,6 +151,8 @@ function carregarChat(): ChatCarregado | null {
       modo: data.modo || "ia",
       avaliacoes: data.avaliacoes || {},
       expirado,
+      ttlMinutos,
+      ultimaMensagemServidor,
     };
   } catch {
     sessionStorage.removeItem(STORAGE_KEY);
@@ -185,19 +214,32 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
   });
 
   const [nomeBot, setNomeBot] = useState(NOME_BOT_PADRAO);
+  const [ttlMinutos, setTtlMinutos] = useState<number>(savedChat?.ttlMinutos || DEFAULT_TTL_MINUTOS);
+  const [agenteAtivo, setAgenteAtivo] = useState<boolean>(true);
+  const [ultimaMsgServidor, setUltimaMsgServidor] = useState<string>(
+    savedChat?.ultimaMensagemServidor || new Date().toISOString()
+  );
+  const [tempoRestante, setTempoRestante] = useState<number>(() => {
+    if (chatExpirado || !savedChat) return (savedChat?.ttlMinutos || DEFAULT_TTL_MINUTOS) * 60;
+    const ttlMs = (savedChat.ttlMinutos || DEFAULT_TTL_MINUTOS) * 60 * 1000;
+    const ultimaMs = new Date(savedChat.ultimaMensagemServidor).getTime();
+    return Math.max(0, Math.floor((ttlMs - (Date.now() - ultimaMs)) / 1000));
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const moduloAnteriorRef = useRef(moduloAtual.nome);
 
-  // ── Buscar configuração do agente ─────────────────────────────────
+  // ── Buscar configuração do agente (incluindo duração da sessão) ──
 
   useEffect(() => {
     fetch(CONFIG_URL)
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
         if (data?.nome_agente) setNomeBot(data.nome_agente);
+        if (data?.duracao_sessao_minutos) setTtlMinutos(data.duracao_sessao_minutos);
+        if (typeof data?.ativo === "boolean") setAgenteAtivo(data.ativo);
       })
       .catch(() => {});
   }, []);
@@ -219,10 +261,57 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
     });
   }, [sessionExpiradaId]);
 
-  // Persiste no sessionStorage a cada mudança
+  // ── Countdown visual + expiração da sessão em tempo real ──────────
+
   useEffect(() => {
-    salvarChat(mensagens, sessionId, modo, avaliacoes);
-  }, [mensagens, sessionId, modo, avaliacoes]);
+    if (!sessionId || chatExpirado) return;
+
+    const interval = setInterval(() => {
+      const ttlMs = ttlMinutos * 60 * 1000;
+      const ultimaMs = new Date(ultimaMsgServidor).getTime();
+      const restanteMs = ttlMs - (Date.now() - ultimaMs);
+      const restanteSeg = Math.max(0, Math.floor(restanteMs / 1000));
+
+      setTempoRestante(restanteSeg);
+
+      if (restanteSeg <= 0) {
+        clearInterval(interval);
+        const oldSessionId = sessionId;
+        limparStorage();
+
+        fetch(ENCERRAR_INATIVIDADE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId: oldSessionId }),
+        }).catch(() => {});
+
+        const novoId = crypto.randomUUID();
+        const agora = new Date().toISOString();
+        setSessionId(novoId);
+        setModo("ia");
+        setLastPollTime("");
+        setAvaliacoes({});
+        setUltimaMsgServidor(agora);
+        setTempoRestante(ttlMinutos * 60);
+        setMensagens([
+          {
+            id: crypto.randomUUID(),
+            remetente: "sistema",
+            texto: "Sua sessão anterior expirou por inatividade. Um novo atendimento foi iniciado.",
+            timestamp: new Date(),
+          },
+          criarMensagemBoasVindas(moduloAtual.nome),
+        ]);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [sessionId, ttlMinutos, chatExpirado, ultimaMsgServidor, criarMensagemBoasVindas, moduloAtual.nome]);
+
+  // Persiste no sessionStorage a cada mudança (com TTL dinâmico)
+  useEffect(() => {
+    salvarChat(mensagens, sessionId, modo, avaliacoes, ttlMinutos, ultimaMsgServidor);
+  }, [mensagens, sessionId, modo, avaliacoes, ttlMinutos, ultimaMsgServidor]);
 
   // Quando muda de módulo, avisa no chat
   useEffect(() => {
@@ -370,11 +459,75 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
     setAnexos((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  // ── Verificar e renovar sessão antes de enviar ────────────────────
+
+  const verificarERenovarSessao = useCallback((): boolean => {
+    const ttlMs = ttlMinutos * 60 * 1000;
+    const ultimaMs = new Date(ultimaMsgServidor).getTime();
+
+    if (Date.now() - ultimaMs > ttlMs) {
+      const oldSessionId = sessionId;
+
+      fetch(ENCERRAR_INATIVIDADE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: oldSessionId }),
+      }).catch(() => {});
+
+      limparStorage();
+      const novoId = crypto.randomUUID();
+      const agora = new Date().toISOString();
+      setSessionId(novoId);
+      setModo("ia");
+      setLastPollTime("");
+      setAvaliacoes({});
+      setUltimaMsgServidor(agora);
+      setTempoRestante(ttlMinutos * 60);
+      setMensagens([
+        {
+          id: crypto.randomUUID(),
+          remetente: "sistema",
+          texto: "Sua sessão anterior expirou. Um novo atendimento foi criado automaticamente.",
+          timestamp: new Date(),
+        },
+        criarMensagemBoasVindas(moduloAtual.nome),
+      ]);
+      return false;
+    }
+    return true;
+  }, [ttlMinutos, ultimaMsgServidor, sessionId, criarMensagemBoasVindas, moduloAtual.nome]);
+
   // ── Enviar mensagem para o n8n ──────────────────────────────────────
 
   const enviarMensagem = useCallback(async () => {
     const texto = input.trim();
     if ((!texto && anexos.length === 0) || carregando) return;
+
+    // Verifica se a sessão não expirou antes de enviar
+    if (!verificarERenovarSessao()) return;
+
+    // Verificar se o agente está ativo
+    if (!agenteAtivo) {
+      setMensagens((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          remetente: "usuario",
+          texto,
+          imagens: anexos.length > 0 ? [...anexos] : undefined,
+          timestamp: new Date(),
+        },
+        {
+          id: crypto.randomUUID(),
+          remetente: "sistema",
+          texto: "O atendimento via IA está temporariamente desativado. Por favor, tente novamente mais tarde ou entre em contato por outro canal.",
+          timestamp: new Date(),
+        },
+      ]);
+      setInput("");
+      setAnexos([]);
+      return;
+    }
 
     const imagensEnvio = [...anexos];
 
@@ -441,6 +594,17 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
 
       console.log(data)
 
+      // Atualizar TTL e timestamp do servidor para resetar o timer
+      const novoTtl = data.duracao_sessao_minutos ? Number(data.duracao_sessao_minutos) : ttlMinutos;
+      if (data.duracao_sessao_minutos) setTtlMinutos(novoTtl);
+
+      // Usar ultima_mensagem_em do servidor como base do timer
+      const servidorTs = data.ultima_mensagem_em || new Date().toISOString();
+      setUltimaMsgServidor(servidorTs);
+      // Recalcular tempo restante baseado no timestamp do servidor
+      const restanteMs = (novoTtl * 60 * 1000) - (Date.now() - new Date(servidorTs).getTime());
+      setTempoRestante(Math.max(0, Math.floor(restanteMs / 1000)));
+
       // Se o n8n retornar um sessionId diferente, usar o do n8n
       if (data.sessionId && data.sessionId !== sessionId) {
         setSessionId(data.sessionId);
@@ -490,7 +654,7 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
       setCarregando(false);
       inputRef.current?.focus();
     }
-  }, [input, anexos, carregando, mensagens, moduloAtual, location.pathname, org, userLogado, token, webhookUrl, sessionId, modo]);
+  }, [input, anexos, carregando, mensagens, moduloAtual, location.pathname, org, userLogado, token, webhookUrl, sessionId, modo, verificarERenovarSessao, agenteAtivo, ttlMinutos]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -525,10 +689,13 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
 
   const limparConversa = () => {
     limparStorage();
+    const agora = new Date().toISOString();
     setSessionId(crypto.randomUUID());
     setModo("ia");
     setLastPollTime("");
     setAvaliacoes({});
+    setUltimaMsgServidor(agora);
+    setTempoRestante(ttlMinutos * 60);
     setMensagens([criarMensagemBoasVindas(moduloAtual.nome)]);
   };
 
@@ -642,6 +809,17 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
     });
   };
 
+  // ── Formatar timer ──────────────────────────────────────────────────
+
+  const formatarTimer = (segundos: number): string => {
+    const min = Math.floor(segundos / 60);
+    const seg = segundos % 60;
+    return `${min.toString().padStart(2, "0")}:${seg.toString().padStart(2, "0")}`;
+  };
+
+  const timerCritico = tempoRestante <= 120; // últimos 2 minutos
+  const timerAlerta = tempoRestante <= 300 && !timerCritico; // últimos 5 minutos
+
   // ── JSX ─────────────────────────────────────────────────────────────
 
   return (
@@ -672,23 +850,43 @@ const SuporteChat = ({ onClose, apiKey, webhookUrl }: SuporteChatProps) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              className="p-2 rounded-full cursor-pointer transition-all hover:scale-105"
-              style={{ backgroundColor: `${theme.colors.primary}10` }}
-              onClick={limparConversa}
-              title="Limpar conversa"
+          <div className="flex items-center gap-2">
+            {/* Timer da sessão */}
+            <div
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-mono font-medium transition-colors ${
+                timerCritico
+                  ? "bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400"
+                  : timerAlerta
+                  ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+              }`}
+              title={`Sessão expira em ${formatarTimer(tempoRestante)}. Cada mensagem reseta o timer.`}
             >
-              <Trash2 size={16} style={{ color: theme.colors.primary }} />
-            </button>
-            <button
-              className="p-2 rounded-full cursor-pointer transition-all hover:scale-105"
-              style={{ backgroundColor: `${theme.colors.primary}10` }}
-              onClick={onClose}
-              title="Fechar"
-            >
-              <X size={20} style={{ color: theme.colors.primary }} />
-            </button>
+              <Timer
+                size={13}
+                className={timerCritico ? "animate-pulse" : ""}
+              />
+              <span>{formatarTimer(tempoRestante)}</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                className="p-2 rounded-full cursor-pointer transition-all hover:scale-105"
+                style={{ backgroundColor: `${theme.colors.primary}10` }}
+                onClick={limparConversa}
+                title="Limpar conversa"
+              >
+                <Trash2 size={16} style={{ color: theme.colors.primary }} />
+              </button>
+              <button
+                className="p-2 rounded-full cursor-pointer transition-all hover:scale-105"
+                style={{ backgroundColor: `${theme.colors.primary}10` }}
+                onClick={onClose}
+                title="Fechar"
+              >
+                <X size={20} style={{ color: theme.colors.primary }} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

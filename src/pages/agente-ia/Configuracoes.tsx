@@ -8,55 +8,50 @@ import {
   Clock,
   MessageSquare,
   Save,
+  Loader2,
+  Timer,
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { useConfiguracaoAgente, useSalvarConfiguracaoAgente } from '../../queries/useSuporte'
+import type { ConfiguracaoAgente } from '../../types/suporte'
 
-const STORAGE_KEY = 'bellory-suporte-config'
-
-interface SuporteConfig {
-  nomeAgente: string
-  mensagemBoasVindas: string
-  mensagemTransferencia: string
-  mensagemEncerramento: string
-  emailNotificacao: string
-  tempoMaximoResposta: number
-  maxMensagensSemResolucao: number
-  horarioInicio: string
-  horarioFim: string
-  ativo: boolean
-}
-
-const defaultConfig: SuporteConfig = {
-  nomeAgente: 'Bellory Assistente',
-  mensagemBoasVindas: 'Olá! Sou o assistente virtual da Bellory. Como posso te ajudar hoje?',
-  mensagemTransferencia: 'Entendo que você precisa de ajuda especializada. Vou transferir seu atendimento para nossa equipe. Um momento, por favor.',
-  mensagemEncerramento: 'Obrigado pelo contato! Se precisar de mais alguma coisa, estou sempre por aqui.',
-  emailNotificacao: 'guilhermeoliveira1998@gmail.com',
-  tempoMaximoResposta: 30,
-  maxMensagensSemResolucao: 3,
-  horarioInicio: '08:00',
-  horarioFim: '22:00',
+const defaultConfig: ConfiguracaoAgente = {
+  nome_agente: 'Bellory Assistente',
+  mensagem_boas_vindas: 'Olá! Sou o assistente virtual da Bellory. Como posso te ajudar hoje?',
+  mensagem_transferencia: 'Entendo que você precisa de ajuda especializada. Vou transferir seu atendimento para nossa equipe. Um momento, por favor.',
+  mensagem_encerramento: 'Obrigado pelo contato! Se precisar de mais alguma coisa, estou sempre por aqui.',
+  email_notificacao: '',
+  tempo_maximo_resposta: 30,
+  max_tentativas_sem_resolucao: 3,
+  horario_inicio: '08:00',
+  horario_fim: '22:00',
   ativo: true,
-}
-
-function loadConfig(): SuporteConfig {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) return { ...defaultConfig, ...JSON.parse(saved) }
-  } catch { /* ignore */ }
-  return defaultConfig
+  duracao_sessao_minutos: 30,
 }
 
 export function Configuracoes() {
-  const [config, setConfig] = useState<SuporteConfig>(loadConfig)
+  const { data: configRemota, isLoading } = useConfiguracaoAgente()
+  const { mutate: salvar, isPending: salvando } = useSalvarConfiguracaoAgente()
 
+  const [config, setConfig] = useState<ConfiguracaoAgente>(defaultConfig)
+
+  // Quando os dados do servidor carregam, preenche o formulário
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
-  }, [config])
+    if (configRemota) {
+      setConfig({ ...defaultConfig, ...configRemota })
+    }
+  }, [configRemota])
 
   const handleSave = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
-    toast.success('Configurações salvas')
+    salvar(config)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={24} className="animate-spin text-[#db6f57]" />
+        <span className="ml-2 text-sm text-[#6b5d57] dark:text-[#B8AEA4]">Carregando configurações...</span>
+      </div>
+    )
   }
 
   return (
@@ -72,7 +67,7 @@ export function Configuracoes() {
         <CardContent>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-[#2a2420] dark:text-[#F5F0EB] font-medium">{config.nomeAgente}</p>
+              <p className="text-sm text-[#2a2420] dark:text-[#F5F0EB] font-medium">{config.nome_agente}</p>
               <p className="text-xs text-[#6b5d57] dark:text-[#B8AEA4]">Atendimento automático N1 · Gemini via n8n</p>
             </div>
             <button
@@ -101,31 +96,31 @@ export function Configuracoes() {
           <div>
             <label className="block text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB] mb-1.5">Nome do Agente</label>
             <Input
-              value={config.nomeAgente}
-              onChange={(e) => setConfig(prev => ({ ...prev, nomeAgente: e.target.value }))}
+              value={config.nome_agente}
+              onChange={(e) => setConfig(prev => ({ ...prev, nome_agente: e.target.value }))}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB] mb-1.5">Mensagem de Boas-vindas</label>
             <textarea
-              value={config.mensagemBoasVindas}
-              onChange={(e) => setConfig(prev => ({ ...prev, mensagemBoasVindas: e.target.value }))}
+              value={config.mensagem_boas_vindas}
+              onChange={(e) => setConfig(prev => ({ ...prev, mensagem_boas_vindas: e.target.value }))}
               className="w-full px-3 py-2 rounded-lg border border-[#d8ccc4] dark:border-[#2D2925] bg-white dark:bg-[#1A1715] text-[#2a2420] dark:text-[#F5F0EB] text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-[#db6f57]/30"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB] mb-1.5">Mensagem de Transferência</label>
             <textarea
-              value={config.mensagemTransferencia}
-              onChange={(e) => setConfig(prev => ({ ...prev, mensagemTransferencia: e.target.value }))}
+              value={config.mensagem_transferencia}
+              onChange={(e) => setConfig(prev => ({ ...prev, mensagem_transferencia: e.target.value }))}
               className="w-full px-3 py-2 rounded-lg border border-[#d8ccc4] dark:border-[#2D2925] bg-white dark:bg-[#1A1715] text-[#2a2420] dark:text-[#F5F0EB] text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-[#db6f57]/30"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB] mb-1.5">Mensagem de Encerramento</label>
             <textarea
-              value={config.mensagemEncerramento}
-              onChange={(e) => setConfig(prev => ({ ...prev, mensagemEncerramento: e.target.value }))}
+              value={config.mensagem_encerramento}
+              onChange={(e) => setConfig(prev => ({ ...prev, mensagem_encerramento: e.target.value }))}
               className="w-full px-3 py-2 rounded-lg border border-[#d8ccc4] dark:border-[#2D2925] bg-white dark:bg-[#1A1715] text-[#2a2420] dark:text-[#F5F0EB] text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-[#db6f57]/30"
             />
           </div>
@@ -144,12 +139,38 @@ export function Configuracoes() {
           <div>
             <label className="block text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB] mb-1.5">E-mail para notificação</label>
             <Input
-              value={config.emailNotificacao}
-              onChange={(e) => setConfig(prev => ({ ...prev, emailNotificacao: e.target.value }))}
+              value={config.email_notificacao}
+              onChange={(e) => setConfig(prev => ({ ...prev, email_notificacao: e.target.value }))}
               placeholder="email@empresa.com"
             />
             <p className="text-xs text-[#6b5d57] dark:text-[#B8AEA4] mt-1">
               E-mail que receberá notificação quando um atendimento for transferido para humano
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sessão */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Timer size={16} className="text-[#db6f57] dark:text-[#E07A62]" />
+            <h3 className="font-semibold text-[#2a2420] dark:text-[#F5F0EB]">Duração da Sessão</h3>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB] mb-1.5">Tempo de sessão (minutos)</label>
+            <Input
+              type="number"
+              min={5}
+              max={480}
+              value={config.duracao_sessao_minutos}
+              onChange={(e) => setConfig(prev => ({ ...prev, duracao_sessao_minutos: Math.max(5, Number(e.target.value)) }))}
+            />
+            <p className="text-xs text-[#6b5d57] dark:text-[#B8AEA4] mt-1">
+              Tempo de inatividade (sem mensagens) após o qual a sessão expira automaticamente.
+              Cada mensagem enviada reseta o timer. Ao expirar, o próximo contato do cliente cria um novo atendimento.
             </p>
           </div>
         </CardContent>
@@ -169,16 +190,16 @@ export function Configuracoes() {
               <label className="block text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB] mb-1.5">Tempo máximo de resposta (seg)</label>
               <Input
                 type="number"
-                value={config.tempoMaximoResposta}
-                onChange={(e) => setConfig(prev => ({ ...prev, tempoMaximoResposta: Number(e.target.value) }))}
+                value={config.tempo_maximo_resposta}
+                onChange={(e) => setConfig(prev => ({ ...prev, tempo_maximo_resposta: Number(e.target.value) }))}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB] mb-1.5">Tentativas antes de transferir</label>
               <Input
                 type="number"
-                value={config.maxMensagensSemResolucao}
-                onChange={(e) => setConfig(prev => ({ ...prev, maxMensagensSemResolucao: Number(e.target.value) }))}
+                value={config.max_tentativas_sem_resolucao}
+                onChange={(e) => setConfig(prev => ({ ...prev, max_tentativas_sem_resolucao: Number(e.target.value) }))}
               />
               <p className="text-xs text-[#6b5d57] dark:text-[#B8AEA4] mt-1">
                 Após N respostas sem resolução, transfere para humano
@@ -188,16 +209,16 @@ export function Configuracoes() {
               <label className="block text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB] mb-1.5">Horário início</label>
               <Input
                 type="time"
-                value={config.horarioInicio}
-                onChange={(e) => setConfig(prev => ({ ...prev, horarioInicio: e.target.value }))}
+                value={config.horario_inicio}
+                onChange={(e) => setConfig(prev => ({ ...prev, horario_inicio: e.target.value }))}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-[#2a2420] dark:text-[#F5F0EB] mb-1.5">Horário fim</label>
               <Input
                 type="time"
-                value={config.horarioFim}
-                onChange={(e) => setConfig(prev => ({ ...prev, horarioFim: e.target.value }))}
+                value={config.horario_fim}
+                onChange={(e) => setConfig(prev => ({ ...prev, horario_fim: e.target.value }))}
               />
             </div>
           </div>
@@ -206,8 +227,12 @@ export function Configuracoes() {
 
       {/* Salvar */}
       <div className="flex justify-end">
-        <Button leftIcon={<Save size={16} />} onClick={handleSave}>
-          Salvar Configurações
+        <Button
+          leftIcon={salvando ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          onClick={handleSave}
+          disabled={salvando}
+        >
+          {salvando ? 'Salvando...' : 'Salvar Configurações'}
         </Button>
       </div>
     </div>

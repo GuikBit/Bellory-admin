@@ -109,3 +109,19 @@ export interface ResponseAPI<T> {
   errorCode?: number
   errors?: Record<string, string>
 }
+
+// ── Configuração do Agente IA ───────────────────────────────────────
+
+export interface ConfiguracaoAgente {
+  nome_agente: string
+  mensagem_boas_vindas: string
+  mensagem_transferencia: string
+  mensagem_encerramento: string
+  email_notificacao: string
+  tempo_maximo_resposta: number
+  max_tentativas_sem_resolucao: number
+  horario_inicio: string
+  horario_fim: string
+  ativo: boolean
+  duracao_sessao_minutos: number
+}

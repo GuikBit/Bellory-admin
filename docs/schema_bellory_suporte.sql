@@ -88,8 +88,20 @@ CREATE TABLE IF NOT EXISTS configuracao_agente (
     tentativas_para_transferir INT NOT NULL DEFAULT 3,        -- falhas antes de transferir para humano
     horario_inicio TIME NOT NULL DEFAULT '08:00',             -- início do atendimento humano
     horario_fim TIME NOT NULL DEFAULT '18:00',                -- fim do atendimento humano
+    duracao_sessao_minutos INT NOT NULL DEFAULT 30,           -- duração da sessão em minutos (inatividade para expirar)
     criado_em TIMESTAMPTZ DEFAULT NOW(),
     atualizado_em TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migração: adicionar coluna se não existir (para bases existentes)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'configuracao_agente' AND column_name = 'duracao_sessao_minutos'
+    ) THEN
+        ALTER TABLE configuracao_agente ADD COLUMN duracao_sessao_minutos INT NOT NULL DEFAULT 30;
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_config_agente_org ON configuracao_agente(organizacao_id);

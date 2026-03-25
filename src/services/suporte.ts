@@ -10,6 +10,7 @@ import type {
   SuporteImagem,
   SuportePasta,
   ResponseAPI,
+  ConfiguracaoAgente,
 } from '../types/suporte'
 
 const N8N_BASE = 'https://auto.bellory.com.br'
@@ -64,6 +65,17 @@ export async function pollMensagensAdmin(
     params: { sessionId, after },
   })
   return data
+}
+
+// ── Configuração do Agente ─────────────────────────────────────────
+
+export async function getConfiguracaoAgente(): Promise<ConfiguracaoAgente> {
+  const { data } = await n8nApi.get('/webhook/suporte_configuracao')
+  return data
+}
+
+export async function salvarConfiguracaoAgente(config: ConfiguracaoAgente): Promise<void> {
+  await n8nApi.post('/webhook/suporte_salvar_configuracao', config)
 }
 
 // ── Base de Conhecimento ───────────────────────────────────────────

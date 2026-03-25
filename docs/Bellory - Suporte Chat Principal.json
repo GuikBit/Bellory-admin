@@ -36,17 +36,38 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT * FROM public.sessoes WHERE id = '{{ $json.sessionId }}' AND status IN ('ativo', 'transferido') AND ultima_mensagem_em > NOW() - INTERVAL '30 minutes' LIMIT 1",
-        "options": {
-          "queryReplacement": "{{ $json.sessionId }}"
+        "query": "SELECT COALESCE(duracao_sessao_minutos, 30) as duracao_sessao_minutos FROM public.configuracao_agente LIMIT 1",
+        "options": {}
+      },
+      "id": "c1d2e3f4-7777-4444-aaaa-777777777777",
+      "name": "Buscar Config Sessao",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2464,
+        208
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "lPGdtsBbIuYx6qzc",
+          "name": "bellory_suporte"
         }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ 'SELECT * FROM public.sessoes WHERE id = \\'' + $('Processar Dados').first().json.sessionId + '\\' AND status IN (\\'ativo\\', \\'transferido\\') AND ultima_mensagem_em > NOW() - INTERVAL \\'' + ($json.duracao_sessao_minutos || 30) + ' minutes\\' LIMIT 1' }}",
+        "options": {}
       },
       "id": "4abccab9-575d-4f1d-8304-34056c864801",
       "name": "Buscar Sessao",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -2464,
+        -2224,
         208
       ],
       "alwaysOutputData": true,
@@ -67,7 +88,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2224,
+        -1984,
         208
       ]
     },
@@ -82,7 +103,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -1984,
+        -1744,
         208
       ],
       "credentials": {
@@ -104,7 +125,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -1744,
+        -1504,
         208
       ],
       "credentials": {
@@ -170,7 +191,7 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        -1504,
+        -1280,
         208
       ]
     },
@@ -429,7 +450,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ resposta: $('Avaliar Resposta IA').item.json.respostaIA + '\\n\\nSeu atendimento foi transferido para um atendente humano. Aguarde.', sessionId: $('Avaliar Resposta IA').item.json.sessionId, modo: 'humano', transferido: true, criado_em: new Date().toISOString() }) }}",
+        "responseBody": "={{ JSON.stringify({ resposta: $('Avaliar Resposta IA').item.json.respostaIA + '\\n\\nSeu atendimento foi transferido para um atendente humano. Aguarde.', sessionId: $('Avaliar Resposta IA').item.json.sessionId, modo: 'humano', transferido: true, criado_em: new Date().toISOString(), duracao_sessao_minutos: $('Buscar Config Sessao').first().json.duracao_sessao_minutos || 30, ultima_mensagem_em: new Date().toISOString() }) }}",
         "options": {
           "responseCode": 200,
           "responseHeaders": {
@@ -458,7 +479,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ resposta: $('Avaliar Resposta IA').item.json.respostaIA, sessionId: $('Avaliar Resposta IA').item.json.sessionId, modo: 'ia', transferido: false, mensagemId: $json.id }) }}",
+        "responseBody": "={{ JSON.stringify({ resposta: $('Avaliar Resposta IA').item.json.respostaIA, sessionId: $('Avaliar Resposta IA').item.json.sessionId, modo: 'ia', transferido: false, mensagemId: $json.id, duracao_sessao_minutos: $('Buscar Config Sessao').first().json.duracao_sessao_minutos || 30, ultima_mensagem_em: new Date().toISOString() }) }}",
         "options": {
           "responseCode": 200,
           "responseHeaders": {
@@ -487,7 +508,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ resposta: 'Sua mensagem foi enviada ao atendente. Por favor, aguarde a resposta.', sessionId: $('Criar ou Reutilizar Sessao').item.json.sessionId, modo: 'humano', transferido: false }) }}",
+        "responseBody": "={{ JSON.stringify({ resposta: 'Sua mensagem foi enviada ao atendente. Por favor, aguarde a resposta.', sessionId: $('Criar ou Reutilizar Sessao').item.json.sessionId, modo: 'humano', transferido: false, duracao_sessao_minutos: $('Buscar Config Sessao').first().json.duracao_sessao_minutos || 30, ultima_mensagem_em: new Date().toISOString() }) }}",
         "options": {
           "responseCode": 200,
           "responseHeaders": {
@@ -516,7 +537,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ resposta: 'Ops! Ocorreu um erro interno no processamento. Tente novamente.', sessionId: '', modo: 'ia', transferido: false }) }}",
+        "responseBody": "={{ JSON.stringify({ resposta: 'Ops! Ocorreu um erro interno no processamento. Tente novamente.', sessionId: '', modo: 'ia', transferido: false, duracao_sessao_minutos: 30, ultima_mensagem_em: new Date().toISOString() }) }}",
         "options": {
           "responseCode": 500,
           "responseHeaders": {
@@ -594,6 +615,17 @@
       ]
     },
     "Processar Dados": {
+      "main": [
+        [
+          {
+            "node": "Buscar Config Sessao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Config Sessao": {
       "main": [
         [
           {
